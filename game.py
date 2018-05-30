@@ -24,7 +24,8 @@ class Picard:
         text_score = [""]
         text_pos = [0, 0]
         text_size = 0
-        prize, level, __lvct = 0, 0, 0
+        restart_callback = None
+        prize, level, __lvct, __ceil = 0, 0, 0, 0
 
         def __init__(self, **kwargs):
             for k in kwargs.keys():
@@ -86,24 +87,32 @@ class Picard:
 
         def pause(self):
             unpaused = (self.board.cols * self.board.square_unit) - self.board.square_unit*3
-            if self.text_pos[0] == unpaused:
+            if self.game_on:
                 self.text_pos = (100, 200)
                 self.text_size = int(self.board.square_unit / 1.6)
                 self.game_on = False
+                if 'GAME OVER' in self.text_score:
+                    self.restart_game()
+                self.text_score = ['PAUSED', 'SCORE {}'.format(self.score)]
             else:
                 self.text_pos = (unpaused, 0)
                 self.text_size = int(self.board.square_unit / 4)
                 self.game_on = True
-            self.text_score = ['PAUSED', 'SCORE {}'.format(self.score)]
+                if 'GAME OVER' in self.text_score:
+                    self.restart_game()
 
         def restart_game(self):
+            print('restarting game')
             x = (self.board.cols * self.board.square_unit) - self.board.square_unit*3
             self.text_size = int(self.board.square_unit / 4)
             self.text_pos = [x, 0]
             self.state = randrange(100) % 5
             self.score = 0
             self.game_on = True
-            self.__score_text()
+            self.board.reset()
+            self.reset()
+            if self.restart_callback is not None:
+                self.restart_callback()
 
         def reset(self):
             self.display_x, self.display_y = 0, 0
@@ -126,7 +135,12 @@ class Picard:
             z = self.__translate()  # translate
             error, msg = self.in_bounds(locutus, z)
             # are we out of bounds?
-            if error != 0:
+            if error == 4:
+                # ceiling
+                self.__ceil += 1
+                if self.__ceil > 4:
+                    self.game_over()
+            elif error != 0 and error != 4:
                 scr = []
                 board = self.__draw_board(board=self.swap, keeping_score=True, cb=cb)
                 self.swap = board
@@ -145,6 +159,7 @@ class Picard:
             if not self.overlap(of_borg, locutus, z):
                 self.swap = self.replicate(locutus, 1)[0]
                 self.__draw_board(board=locutus, cb=cb)
+                self.__ceil = 0
                 result = True, 'ok'
             else:
                 if self.fell < 1:
@@ -194,6 +209,9 @@ class Picard:
                 if _y + 1 > len(grid):
                     result = 3
                     msg = "___floor___"
+                elif _y - 1 < 3:
+                    result = 4
+                    msg = "ceiling"
             return result, msg
 
         @staticmethod

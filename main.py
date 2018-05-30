@@ -12,9 +12,13 @@ from kivy.config import Config
 from kivy.clock import Clock, mainthread
 from kivy.properties import StringProperty, BooleanProperty
 from kivy.utils import platform
+from kivy.uix.screenmanager import ScreenManager, Screen
+from kivy.core.window import Window
 
 from audio import load_audio
 from game import Borg, Picard, LEFT, RIGHT
+
+Config.set('kivy', 'exit_on_escape', '0')
 
 SU = 50
 COLS = 10
@@ -48,7 +52,34 @@ Builder.load_string("""
 
 
 <MainMenu>
-
+    orientation: "vertical"
+    canvas.before:
+        Rectangle:
+            pos: self.pos
+            size: self.size
+            source: "data/img/background.png"
+    Label:
+        font_name: 'data/fonts/Playfair_Display/PlayfairDisplay-Regular.ttf'
+        text: "machine werkz"
+        size_hint_y: .03
+    Button:
+        background_color: 0, 0, 0, 0
+        font_name: 'data/fonts/Playfair_Display/PlayfairDisplay-Regular.ttf'
+        font_size: '30sp'
+        text: "PLAY"
+        size_hint_y: .71
+        on_press: app.change_screen('game')
+    Button:
+        background_color: 0, 0, 0, 0
+        font_name: 'data/fonts/Playfair_Display/PlayfairDisplay-Regular.ttf'
+        font_size: '15sp'
+        text: "SETTINGS"
+        size_hint_y: .20
+        on_press: app.change_screen('settings')
+    Label:
+        size_hint_y: .03
+    Label:
+        size_hint_y: .03
 
 <GameGridLayout>
 
@@ -61,13 +92,42 @@ Builder.load_string("""
             source: "data/img/background.png"
     orientation: "vertical"
     Label:
+        font_name: 'data/fonts/Playfair_Display/PlayfairDisplay-Regular.ttf'
+        font_size: '18sp'
         text: app.current_score
         size_hint_y: .03
     GameGridLayout:
         size_hint_y: .97
 
 
+<GameScreen>:
+    BoundingBox:
+
+<MenuScreen>:
+    MainMenu:
+
+
+<SettingsScreen>:
+    BoxLayout:
+        orientation: "vertical"
+        Button:
+            text: 'My settings button'
+        Button:
+            text: 'Back to menu'
+            on_press: app.change_screen('menu')
 """)
+
+
+class MenuScreen(Screen):
+    pass
+
+
+class GameScreen(Screen):
+    pass
+
+
+class MainMenu(BoxLayout):
+    pass
 
 
 class BoundingBox(BoxLayout):
@@ -80,9 +140,6 @@ class PuzzleGame(Widget):
 
     def __init__(self, **kwargs):
         super(PuzzleGame, self).__init__(**kwargs)
-        # self._keyboard = Window.request_keyboard(self._keyboard_closed, self)
-        # self._keyboard.bind(on_key_down=self._on_keyboard_down)
-        # self._keyboard.bind(on_key_up=self._on_keyboard_up)
         app = App.get_running_app()
         Clock.schedule_interval(self.tick, app.fall_speed)
         app = App.get_running_app()
@@ -113,6 +170,7 @@ class PuzzleGame(Widget):
             self.piece.shape_shift()
             self.piece.reset()
             app.current_score = self.piece.text_score[0]
+            # check if
             return True
         try:
             for y in range(len(self.piece.board.grid)):
@@ -157,7 +215,8 @@ class GameGridLayout(GridLayout):
                 self.add_widget(t)
                 app.widget_grid[y].append(t)
         app.game_board = game_board
-        piece = Picard(square_unit=SU, shape=randint(0, 6), state=True, board=app.game_board)
+        piece = Picard(square_unit=SU, shape=randint(0, 6), state=True,
+                       board=app.game_board, restart_callback=app.widget_reset)
         app.piece = piece
         app.game_engine = PuzzleGame()
         app.widget_grid = app.widget_grid
@@ -168,15 +227,36 @@ class MachineWerkz(App):
     game_board, piece, game_engine = None, None, None
     widget_grid = None
     fall_speed = 0.7
-    current_score = StringProperty('Machine Werkz')
+    current_score = StringProperty('machine werkz')
     current_song = None
     music_playlist = []
     music_played = []
+    __manager = None
+    __knock = 0
 
     def build(self, **kwargs):
+        self.bind(on_start=self.init_device)
         self.music_playlist = [str(_) for _ in PLAYLIST]
         self.play_music()
-        return BoundingBox()
+        self.__manager = ScreenManager()
+        self.__manager.add_widget(MenuScreen(name='menu'))
+        self.__manager.add_widget(GameScreen(name='game'))
+        return self.__manager
+        # return BoundingBox()
+
+    def init_device(self, *args):
+        self.piece.pause()
+        if platform == 'android':
+            import android
+            android.map.key(android.KEYCODE_BACK, 1001)
+        Window.bind(on_keyboard=self.on_kb)
+
+    def on_kb(self, window, key1, key2, txt, modifiers):
+        if key1 == 27 or key1 == 1001:
+            self.__knock += 1
+            if self.__knock > 2:
+                return self.stop()
+            return self.change_screen('menu')
 
     def play_music(self):
         try:
@@ -207,6 +287,25 @@ class MachineWerkz(App):
             self.refresh_display()
         else:
             pass
+
+    def change_screen(self, name):
+        last = str(self.__manager.current)
+        try:
+            self.__manager.current = name
+        except Exception as e:
+            self.__manager.current = last
+        if last != name and name in ['game', 'menu']:
+            self.piece.pause()
+            self.__knock = 0
+        if last != name and name in ['menu', 'settings']:
+            self.__knock = 0
+        return True
+
+    def widget_reset(self):
+        for y in range(len(self.game_board.grid)):
+            for x in range(len(self.game_board.grid[0])):
+                self.widget_grid[y][x].LIT = [False, True][int(self.game_board.grid[y][x])]
+        self.current_score = 'machine werkz'
 
 
 if __name__ == "__main__":
