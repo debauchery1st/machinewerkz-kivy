@@ -30,8 +30,7 @@ DELAY = 50
 PLAYLIST = ['data/audio/{}'.format(_) for _ in listdir('data/audio') if _.endswith('.mp3') or _.endswith('.ogg')]
 shuffle(PLAYLIST)
 
-__version__ = "0.3.3"
-
+__version__ = "0.4.0"
 
 # for debugging on desktop, set window size
 if platform in ['linux', 'windows', 'macosx']:
@@ -100,6 +99,35 @@ Builder.load_string("""
         size_hint_y: .97
 
 
+<SettingsMenu>
+    canvas.before:
+        Rectangle:
+            pos: self.pos
+            size: self.size
+            source: "data/img/background.png"
+    orientation: "vertical"
+    Spinner:
+        background_color: 0, 0, 0, 0
+        id: speed_spinner
+        size_hint_y: .3
+        font_name: 'data/fonts/Playfair_Display/PlayfairDisplay-Regular.ttf'
+        font_size: '30sp'
+        text: 'speed'
+        values: ('Rolling/Packing', 'Smoking/Vaping', 'Chilling', 'L')
+    Label:
+        size_hint_y: .4
+        font_name: 'data/fonts/Playfair_Display/PlayfairDisplay-Regular.ttf'
+        font_size: '25sp'
+        text: app.change_speed(speed_spinner.text)
+    Button:
+        background_color: 0, 0, 0, 0
+        size_hint_y: .3
+        font_name: 'data/fonts/Playfair_Display/PlayfairDisplay-Regular.ttf'
+        font_size: '20sp'
+        text: 'Back to menu'
+        on_press: app.change_screen('menu')
+
+
 <GameScreen>:
     BoundingBox:
 
@@ -108,14 +136,13 @@ Builder.load_string("""
 
 
 <SettingsScreen>:
-    BoxLayout:
-        orientation: "vertical"
-        Button:
-            text: 'My settings button'
-        Button:
-            text: 'Back to menu'
-            on_press: app.change_screen('menu')
+    SettingsMenu:
+
 """)
+
+
+class SettingsScreen(Screen):
+    pass
 
 
 class MenuScreen(Screen):
@@ -123,6 +150,10 @@ class MenuScreen(Screen):
 
 
 class GameScreen(Screen):
+    pass
+
+
+class SettingsMenu(BoxLayout):
     pass
 
 
@@ -137,14 +168,19 @@ class BoundingBox(BoxLayout):
 class PuzzleGame(Widget):
     tock = 0
     last_state = None
+    event = None
 
     def __init__(self, **kwargs):
         super(PuzzleGame, self).__init__(**kwargs)
         app = App.get_running_app()
-        Clock.schedule_interval(self.tick, app.fall_speed)
-        app = App.get_running_app()
         self.piece = app.piece
         self.board = app.game_board
+        self.set_interval(app.fall_speed)
+
+    def set_interval(self, speed):
+        if self.event is not None:
+            self.event.cancel()
+        self.event = Clock.schedule_interval(self.tick, speed)
 
     def tick(self, *args):
         self.tock += 1
@@ -231,6 +267,7 @@ class MachineWerkz(App):
     current_song = None
     music_playlist = []
     music_played = []
+    spinner = None
     __manager = None
     __knock = 0
 
@@ -241,8 +278,8 @@ class MachineWerkz(App):
         self.__manager = ScreenManager()
         self.__manager.add_widget(MenuScreen(name='menu'))
         self.__manager.add_widget(GameScreen(name='game'))
+        self.__manager.add_widget(SettingsScreen(name='settings'))
         return self.__manager
-        # return BoundingBox()
 
     def init_device(self, *args):
         self.piece.pause()
@@ -294,10 +331,10 @@ class MachineWerkz(App):
             self.__manager.current = name
         except Exception as e:
             self.__manager.current = last
-        if last != name and name in ['game', 'menu']:
+        if last == 'settings':
+            return True
+        if last != name and name in ['menu', 'game']:
             self.piece.pause()
-            self.__knock = 0
-        if last != name and name in ['menu', 'settings']:
             self.__knock = 0
         return True
 
@@ -306,6 +343,22 @@ class MachineWerkz(App):
             for x in range(len(self.game_board.grid[0])):
                 self.widget_grid[y][x].LIT = [False, True][int(self.game_board.grid[y][x])]
         self.current_score = 'machine werkz'
+
+    def change_speed(self, t):
+        try:
+            res = {
+                'Rolling/Packing': ('play whilst otherwise occupied', 0.7),
+                'Smoking/Vaping': ('play while one hand is occupied', 0.6),
+                'Chilling': ('just chilling', 0.5),
+                'L': ('good luck', 0.3)
+            }[t]
+            if res[1] != self.fall_speed:
+                # change speed
+                self.fall_speed = res[1]
+                self.game_engine.set_interval(self.fall_speed)
+        except KeyError:
+            return ""
+        return "{}".format(res[0])
 
 
 if __name__ == "__main__":
