@@ -1,2 +1,8 @@
 # machinewerkz-kivy
-a kivy wrapped python game
+
+
+a [Kivy](https://kivy.org)
+wrapped finite state machine written in [Python](http://www.python.org)
+
+![screenshot](screenshot.png)
+
