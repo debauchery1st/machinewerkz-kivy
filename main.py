@@ -283,9 +283,6 @@ class MachineWerkz(App):
 
     def init_device(self, *args):
         self.piece.pause()
-        if platform == 'android':
-            import android
-            android.map.key(android.KEYCODE_BACK, 1001)
         Window.bind(on_keyboard=self.on_kb)
 
     def on_kb(self, window, key1, key2, txt, modifiers):
@@ -359,6 +356,13 @@ class MachineWerkz(App):
         except KeyError:
             return ""
         return "{}".format(res[0])
+
+    def on_stop(self):
+        try:
+            print('stopping music')
+            self.current_song.stop()
+        except TypeError as e:
+            print('TYPE ERROR: ', e)
 
 
 if __name__ == "__main__":

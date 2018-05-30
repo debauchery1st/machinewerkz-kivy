@@ -3,10 +3,10 @@ title = Machine Werkz
 package.name = machinewerkz
 package.domain = org.test
 source.dir = .
-source.include_exts = py,png,jpg,kv,atlas,ogg
+source.include_exts = py,png,jpg,kv,atlas,ogg,ttf
 version.regex = __version__ = ['"](.*)['"]
 version.filename = %(source.dir)s/main.py
-requirements = kivy, hostpython2
+requirements = kivy, hostpython2, android
 presplash.filename = %(source.dir)s/data/img/loading.png
 icon.filename = %(source.dir)s/data/img/steampunk.png
 orientation = portrait
