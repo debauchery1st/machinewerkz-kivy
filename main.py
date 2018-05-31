@@ -31,7 +31,7 @@ DELAY = 50
 
 shuffle(PLAYLIST)
 
-__version__ = "0.4.2"
+__version__ = "0.4.3"
 
 # for debugging on desktop, set window size
 if platform in ['linux', 'windows', 'macosx']:
@@ -109,7 +109,7 @@ class PuzzleGame(Widget):
     @mainthread
     def next_state(self):
         app = App.get_running_app()
-        ok, msg = self.piece.cb_draw(cb=self.draw_method)
+        ok, msg = self.piece.cb_draw(cb=self.draw_method, acb=app.audio_callback)
         if not ok:
             self.piece.swap_grid()
             self.piece.shape_shift()
@@ -204,6 +204,16 @@ class MachineWerkz(App):
                 return self.stop()
             return self.change_screen('menu')
 
+    def audio_callback(self, audio_type, audio_name, extra=None):
+        # print('Audio Callback: ', audio_type, audio_name, extra)
+        if audio_type in ['fx', 'FX']:
+            try:
+                _ = load_audio(FX[audio_name])
+                _.play()
+                del _
+            except KeyError:
+                pass
+
     def toggle_music(self):
         self.music_state = not self.music_state
         self.play_music()
@@ -233,18 +243,21 @@ class MachineWerkz(App):
         if self.current_song is not None:
             if self.current_song.state == 'stop':
                 self.play_music()
-        self.piece.cb_draw(cb=self.game_engine.draw_method)
+        self.piece.cb_draw(cb=self.game_engine.draw_method, acb=self.audio_callback)
 
     def modify_state(self, pos, *kwargs):
         if 11 > pos[0] > 6:
             self.piece.move(RIGHT)
             self.refresh_display()
+            self.audio_callback(audio_type='fx', audio_name='tick')
         elif -1 < pos[0] < 4:
             self.piece.move(LEFT)
             self.refresh_display()
+            self.audio_callback(audio_type='fx', audio_name='tick')
         elif 3 < pos[0] < 7:
             self.piece.rotate()
             self.refresh_display()
+            self.audio_callback(audio_type='fx', audio_name='rotate')
         else:
             pass
 

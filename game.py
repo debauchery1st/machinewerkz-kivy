@@ -41,7 +41,7 @@ class Picard:
                 self.text_score = ["TOTAL {}".format(self.score)]
             return self.text_score
 
-        def __draw_board(self, board=None, keeping_score=False, cb=None):
+        def __draw_board(self, board=None, keeping_score=False, cb=None, acb=None):
             scr = []
             if board is None:
                 board = self.board.grid
@@ -49,14 +49,14 @@ class Picard:
                 if 0 not in board[y] and keeping_score:
                     scr.append(y)
             if len(scr) > 0:
-                board = self.__wipe_rows(scr, board)
+                board = self.__wipe_rows(scr, board, acb=acb)
                 del scr[:]
-                self.__draw_board(board=board)
+                self.__draw_board(board=board, acb=acb)
             if cb is not None:
                 cb(board)
             return board
 
-        def __wipe_rows(self, rows, grid):
+        def __wipe_rows(self, rows, grid, acb=None):
             total = 0
             l = len(grid[0])
             for row in sorted(rows):
@@ -71,6 +71,8 @@ class Picard:
             if self.__lvct == 0:
                 self.level += 1
             self.prize = total
+            if total > 0 and acb is not None:
+                acb(audio_type='fx', audio_name='magic', extra=total)
             return grid
 
         def __translate(self):
@@ -126,10 +128,10 @@ class Picard:
             self.move(DOWN)
             self.fell += 1
 
-        def cb_draw(self, cb=None):
+        def cb_draw(self, cb=None, acb=None):
             self.__score_text()
             if not self.game_on:
-                self.__draw_board(cb=cb)
+                self.__draw_board(cb=cb, acb=acb)
                 return True, "finished"
             locutus, of_borg = self.replicate(self.board.grid, 2)  # replicate
             z = self.__translate()  # translate
@@ -142,7 +144,7 @@ class Picard:
                     self.game_over()
             elif error != 0 and error != 4:
                 scr = []
-                board = self.__draw_board(board=self.swap, keeping_score=True, cb=cb)
+                board = self.__draw_board(board=self.swap, keeping_score=True, cb=cb, acb=acb)
                 self.swap = board
                 del locutus, of_borg
                 if error == 3:
@@ -158,13 +160,13 @@ class Picard:
             # does it overlap ?
             if not self.overlap(of_borg, locutus, z):
                 self.swap = self.replicate(locutus, 1)[0]
-                self.__draw_board(board=locutus, cb=cb)
+                self.__draw_board(board=locutus, cb=cb, acb=acb)
                 self.__ceil = 0
                 result = True, 'ok'
             else:
                 if self.fell < 1:
                     self.game_over()
-                self.__draw_board(board=self.swap, keeping_score=True, cb=cb)
+                self.__draw_board(board=self.swap, keeping_score=True, cb=cb, acb=acb)
                 result = False, "overlap"
             del locutus, of_borg
             return result

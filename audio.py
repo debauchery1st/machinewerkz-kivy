@@ -25,9 +25,10 @@ def fx_dict(fx_dir=None):
 
 def load_audio(file):
     sound = SoundLoader.load(file)
-    if sound:
-        print("Sound found at %s" % sound.source)
-        print("Sound is %.3f seconds" % sound.length)
+    # if not sound:
+    #     print("NO Sound found at %s" % sound.source)
+    # else:
+    #     print("Sound is %.3f seconds" % sound.length)
     return sound
 
 
