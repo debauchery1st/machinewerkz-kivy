@@ -1,0 +1,178 @@
+<FileBox>:
+    canvas.before:
+        Rectangle:
+            pos: self.pos
+            size: self.size
+            source: "data/img/background.png"
+    orientation: 'vertical'
+    Button:
+        background_color: 0, 0, 0, 0
+        size_hint_y: .1
+        font_name: 'data/fonts/Playfair_Display/PlayfairDisplay-Regular.ttf'
+        font_size: '20sp'
+        text: 'Back to Settings'
+        on_press: app.change_screen('settings', angle='left')
+    Button:
+        size_hint_y: .2
+        background_color:(.3, .6, 9, .3)
+        size_hint_y: None
+        text: 'select {}'.format(fc.path if len(fc.selection) == 0 else ','.join(fc.selection))
+        on_press: app.file_select(fc.selection, fc.path)
+    BoxLayout:
+        size_hint_y: None
+        height: sp(52)
+        Button:
+            background_color: (0.0, 1.0, 0.0, .5) if fc.view_mode == 'icon' else (1, 0, 0, .3)
+            text: 'Icon View'
+            on_press: fc.view_mode = 'icon'
+        Button:
+            text: 'List View'
+            background_color: (0.0, 1.0, 0.0, .5) if fc.view_mode == 'list' else (1, 0, 0, .3)
+            on_press: fc.view_mode = 'list'
+    FileChooser:
+        id: fc
+        multiselect: True
+        FileChooserIconLayout
+        FileChooserListLayout
+
+
+<TileWidget>
+    source: self.LIT_IMG if self.LIT else self.DARK_IMG
+    allow_stretch: True
+    keep_ratio: False
+    on_press:
+        app.modify_state(self.grid_pos)
+
+
+<MainMenu>
+    orientation: "vertical"
+    canvas.before:
+        Rectangle:
+            pos: self.pos
+            size: self.size
+            source: "data/img/background.png"
+    Label:
+        font_name: 'data/fonts/Playfair_Display/PlayfairDisplay-Regular.ttf'
+        text: "machine werkz"
+        size_hint_y: .03
+    Button:
+        background_color: 0, 0, 0, 0
+        font_name: 'data/fonts/Playfair_Display/PlayfairDisplay-Regular.ttf'
+        font_size: '30sp'
+        text: "PLAY"
+        size_hint_y: .71
+        on_press: app.change_screen('game', angle='left')
+    Button:
+        background_color: 0, 0, 0, 0
+        font_name: 'data/fonts/Playfair_Display/PlayfairDisplay-Regular.ttf'
+        font_size: '15sp'
+        text: "SETTINGS"
+        size_hint_y: .20
+        on_press: app.change_screen('settings', angle='right')
+    Label:
+        size_hint_y: .03
+    Label:
+        size_hint_y: .03
+
+<GameGridLayout>
+
+
+<BoundingBox>:
+    canvas.before:
+        Rectangle:
+            pos: self.pos
+            size: self.size
+            source: "data/img/background.png"
+    orientation: "vertical"
+    Label:
+        font_name: 'data/fonts/Playfair_Display/PlayfairDisplay-Regular.ttf'
+        font_size: '18sp'
+        text: app.current_score
+        size_hint_y: .03
+    GameGridLayout:
+        size_hint_y: .97
+
+
+<SettingsMenu>
+    canvas.before:
+        Rectangle:
+            pos: self.pos
+            size: self.size
+            source: "data/img/background.png"
+    orientation: "vertical"
+    Button:
+        background_color: 0, 0, 0, 0
+        size_hint_y: .3
+        font_name: 'data/fonts/Playfair_Display/PlayfairDisplay-Regular.ttf'
+        font_size: '20sp'
+        text: 'Back to menu'
+        on_press: app.change_screen('menu', angle='left')
+    Spinner:
+        background_color: 0, 0, 0, 0
+        id: speed_spinner
+        size_hint_y: .3
+        font_name: 'data/fonts/Playfair_Display/PlayfairDisplay-Regular.ttf'
+        font_size: '30sp'
+        text: 'game speed'
+        values: ('Rolling/Packing', 'Smoking/Vaping', 'Chilling', 'L')
+    Label:
+        size_hint_y: .4
+        font_name: 'data/fonts/Playfair_Display/PlayfairDisplay-Regular.ttf'
+        font_size: '25sp'
+        text: app.change_speed(speed_spinner.text)
+    Button:
+        background_color: 0, 0, 0, 0
+        font_name: 'data/fonts/Playfair_Display/PlayfairDisplay-Regular.ttf'
+        font_size: '30sp'
+        size_hint_y: .4
+        text: 'Select Music From Files'
+        on_press: app.change_screen('file_box', angle='right')
+    Button:
+        background_color: 0, 0, 0, 0
+        font_name: 'data/fonts/Playfair_Display/PlayfairDisplay-Regular.ttf'
+        font_size: '18sp'
+        size_hint_y: None
+        text: 'Reset Music Selection'
+        on_press: app.reset_music()
+    BoxLayout:
+        padding: 0
+        orientation: 'horizontal'
+        Label:
+            background_color: 1, 0, 0, 0
+            size_hint_y: .3
+            font_name: 'data/fonts/Playfair_Display/PlayfairDisplay-Regular.ttf'
+            font_size: '20sp'
+            text: 'Music'
+        ToggleButton:
+            background_color: (.0, 1, .0, .5) if app.music_state else (0, 0, 0, 0.0)
+            size_hint_y: .3
+            font_name: 'data/fonts/Playfair_Display/PlayfairDisplay-Regular.ttf'
+            font_size: '20sp'
+            text: 'ON'
+            group: 'music'
+            state: 'normal' if not app.music_state else 'down'
+            on_press: if not app.music_state: app.toggle_music()
+        ToggleButton:
+            background_color: (1.0, .0, .0, .5) if app.music_state else (0, 0, 0, 0.0)
+            size_hint_y: .3
+            font_name: 'data/fonts/Playfair_Display/PlayfairDisplay-Regular.ttf'
+            font_size: '20sp'
+            text: 'OFF'
+            group: 'music'
+            state: 'down' if not app.music_state else 'normal'
+            on_press: if app.music_state: app.toggle_music()
+
+
+<GameScreen>:
+    BoundingBox:
+
+<MenuScreen>:
+    MainMenu:
+
+
+<SettingsScreen>:
+    SettingsMenu:
+
+
+<FileBrowserScreen>:
+    FileBox:

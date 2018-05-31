@@ -1,8 +1,6 @@
 from os import getcwd, path, listdir
 from random import randint, shuffle
-
 from kivy.app import App
-from kivy.lang import Builder
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.image import Image
@@ -10,7 +8,7 @@ from kivy.uix.button import ButtonBehavior
 from kivy.uix.widget import Widget
 from kivy.config import Config
 from kivy.clock import Clock, mainthread
-from kivy.properties import StringProperty, BooleanProperty
+from kivy.properties import StringProperty, BooleanProperty, NumericProperty
 from kivy.utils import platform
 from kivy.uix.screenmanager import ScreenManager, Screen
 from kivy.core.window import Window
@@ -20,6 +18,7 @@ from game import Borg, Picard, LEFT, RIGHT
 
 Config.set('kivy', 'exit_on_escape', '0')
 
+
 SU = 50
 COLS = 10
 ROWS = 18
@@ -27,7 +26,11 @@ SCREEN_WIDTH = SU * COLS
 SCREEN_HEIGHT = SU * ROWS
 DELAY = 50
 
-PLAYLIST = ['data/audio/{}'.format(_) for _ in listdir('data/audio') if _.endswith('.mp3') or _.endswith('.ogg')]
+
+PLAYLIST_DIR = path.join(getcwd(), 'data/audio')
+PLAYLIST = [
+    path.join(PLAYLIST_DIR, _) for _ in listdir(PLAYLIST_DIR) if str(_)[-3:] in ['mp3', 'ogg']
+]
 shuffle(PLAYLIST)
 
 __version__ = "0.4.0"
@@ -40,105 +43,13 @@ if platform in ['linux', 'windows', 'macosx']:
 
 Config.set('graphics', 'resizable', '0')
 
-Builder.load_string("""
 
-<TileWidget>
-    source: self.LIT_IMG if self.LIT else self.DARK_IMG
-    allow_stretch: True
-    keep_ratio: False
-    on_press:
-        app.modify_state(self.grid_pos)
+class FileBox(BoxLayout):
+    pass
 
 
-<MainMenu>
-    orientation: "vertical"
-    canvas.before:
-        Rectangle:
-            pos: self.pos
-            size: self.size
-            source: "data/img/background.png"
-    Label:
-        font_name: 'data/fonts/Playfair_Display/PlayfairDisplay-Regular.ttf'
-        text: "machine werkz"
-        size_hint_y: .03
-    Button:
-        background_color: 0, 0, 0, 0
-        font_name: 'data/fonts/Playfair_Display/PlayfairDisplay-Regular.ttf'
-        font_size: '30sp'
-        text: "PLAY"
-        size_hint_y: .71
-        on_press: app.change_screen('game')
-    Button:
-        background_color: 0, 0, 0, 0
-        font_name: 'data/fonts/Playfair_Display/PlayfairDisplay-Regular.ttf'
-        font_size: '15sp'
-        text: "SETTINGS"
-        size_hint_y: .20
-        on_press: app.change_screen('settings')
-    Label:
-        size_hint_y: .03
-    Label:
-        size_hint_y: .03
-
-<GameGridLayout>
-
-
-<BoundingBox>:
-    canvas.before:
-        Rectangle:
-            pos: self.pos
-            size: self.size
-            source: "data/img/background.png"
-    orientation: "vertical"
-    Label:
-        font_name: 'data/fonts/Playfair_Display/PlayfairDisplay-Regular.ttf'
-        font_size: '18sp'
-        text: app.current_score
-        size_hint_y: .03
-    GameGridLayout:
-        size_hint_y: .97
-
-
-<SettingsMenu>
-    canvas.before:
-        Rectangle:
-            pos: self.pos
-            size: self.size
-            source: "data/img/background.png"
-    orientation: "vertical"
-    Spinner:
-        background_color: 0, 0, 0, 0
-        id: speed_spinner
-        size_hint_y: .3
-        font_name: 'data/fonts/Playfair_Display/PlayfairDisplay-Regular.ttf'
-        font_size: '30sp'
-        text: 'speed'
-        values: ('Rolling/Packing', 'Smoking/Vaping', 'Chilling', 'L')
-    Label:
-        size_hint_y: .4
-        font_name: 'data/fonts/Playfair_Display/PlayfairDisplay-Regular.ttf'
-        font_size: '25sp'
-        text: app.change_speed(speed_spinner.text)
-    Button:
-        background_color: 0, 0, 0, 0
-        size_hint_y: .3
-        font_name: 'data/fonts/Playfair_Display/PlayfairDisplay-Regular.ttf'
-        font_size: '20sp'
-        text: 'Back to menu'
-        on_press: app.change_screen('menu')
-
-
-<GameScreen>:
-    BoundingBox:
-
-<MenuScreen>:
-    MainMenu:
-
-
-<SettingsScreen>:
-    SettingsMenu:
-
-""")
+class FileBrowserScreen(Screen):
+    pass
 
 
 class SettingsScreen(Screen):
@@ -265,6 +176,8 @@ class MachineWerkz(App):
     fall_speed = 0.7
     current_score = StringProperty('machine werkz')
     current_song = None
+    music_state = True
+    music_location = 'default'
     music_playlist = []
     music_played = []
     spinner = None
@@ -279,6 +192,7 @@ class MachineWerkz(App):
         self.__manager.add_widget(MenuScreen(name='menu'))
         self.__manager.add_widget(GameScreen(name='game'))
         self.__manager.add_widget(SettingsScreen(name='settings'))
+        self.__manager.add_widget(FileBrowserScreen(name='file_box'))
         return self.__manager
 
     def init_device(self, *args):
@@ -292,7 +206,17 @@ class MachineWerkz(App):
                 return self.stop()
             return self.change_screen('menu')
 
+    def toggle_music(self):
+        self.music_state = not self.music_state
+        self.play_music()
+
     def play_music(self):
+        if not self.music_state:
+            try:
+                self.current_song.stop()
+            except TypeError:
+                pass
+            return "MUSIC OFF"
         try:
             s = self.music_playlist.pop()
         except IndexError as e:
@@ -322,7 +246,8 @@ class MachineWerkz(App):
         else:
             pass
 
-    def change_screen(self, name):
+    def change_screen(self, name, angle="right"):
+        self.__manager.transition.direction = angle
         last = str(self.__manager.current)
         try:
             self.__manager.current = name
@@ -363,6 +288,44 @@ class MachineWerkz(App):
             self.current_song.stop()
         except TypeError as e:
             print('TYPE ERROR: ', e)
+
+    def file_select(self, selection, p):
+        available = []
+        if len(selection) > 0:
+            print("Selected : {}".format(selection))
+            for _ in selection:
+                if _[-4:] in ['.mp3', '.ogg']:
+                    available.append(path.join(p, _))
+        else:
+            for _ in listdir(p):
+                if _[-4:] in ['.mp3', '.ogg']:
+                    available.append(path.join(p, _))
+        if len(available) > 0:
+            try:
+                print('stopping music')
+                self.current_song.stop()
+            except TypeError as e:
+                print('TYPE ERROR: ', e)
+            self.music_state = False
+            self.music_playlist = available
+            self.music_played = [PLAYLIST]
+            try:
+                self.toggle_music()
+            except TypeError:
+                pass
+            return True
+        return False
+
+    def reset_music(self):
+        try:
+            print('stopping music')
+            self.current_song.stop()
+        except TypeError as e:
+            print('TYPE ERROR: ', e)
+        self.music_playlist = [str(_) for _ in PLAYLIST]
+        shuffle(self.music_playlist)
+        if not self.music_state:
+            self.toggle_music()
 
 
 if __name__ == "__main__":
