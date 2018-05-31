@@ -8,16 +8,18 @@ from kivy.uix.button import ButtonBehavior
 from kivy.uix.widget import Widget
 from kivy.config import Config
 from kivy.clock import Clock, mainthread
-from kivy.properties import StringProperty, BooleanProperty, NumericProperty
+from kivy.properties import StringProperty, BooleanProperty
 from kivy.utils import platform
 from kivy.uix.screenmanager import ScreenManager, Screen
 from kivy.core.window import Window
 
-from audio import load_audio
+from audio import load_audio, music_list, fx_dict
 from game import Borg, Picard, LEFT, RIGHT
 
 Config.set('kivy', 'exit_on_escape', '0')
 
+FX = fx_dict(path.join(getcwd(), 'data/audio/fx'))
+PLAYLIST = music_list(path.join(getcwd(), 'data/audio/music'))
 
 SU = 50
 COLS = 10
@@ -27,13 +29,9 @@ SCREEN_HEIGHT = SU * ROWS
 DELAY = 50
 
 
-PLAYLIST_DIR = path.join(getcwd(), 'data/audio')
-PLAYLIST = [
-    path.join(PLAYLIST_DIR, _) for _ in listdir(PLAYLIST_DIR) if str(_)[-3:] in ['mp3', 'ogg']
-]
 shuffle(PLAYLIST)
 
-__version__ = "0.4.1"
+__version__ = "0.4.2"
 
 # for debugging on desktop, set window size
 if platform in ['linux', 'windows', 'macosx']:
@@ -187,12 +185,12 @@ class MachineWerkz(App):
     def build(self, **kwargs):
         self.bind(on_start=self.init_device)
         self.music_playlist = [str(_) for _ in PLAYLIST]
-        self.play_music()
         self.__manager = ScreenManager()
         self.__manager.add_widget(MenuScreen(name='menu'))
         self.__manager.add_widget(GameScreen(name='game'))
         self.__manager.add_widget(SettingsScreen(name='settings'))
         self.__manager.add_widget(FileBrowserScreen(name='file_box'))
+        self.play_music()
         return self.__manager
 
     def init_device(self, *args):
@@ -217,12 +215,16 @@ class MachineWerkz(App):
             except TypeError:
                 pass
             return "MUSIC OFF"
-        try:
-            s = self.music_playlist.pop()
-        except IndexError as e:
-            self.music_playlist = [str(_) for _ in self.music_played]
-            del self.music_played[:]
-            s = self.music_playlist.pop()
+        # music for menus
+        if self.__manager is not None and (self.__manager.current not in ['game']):
+            s = FX['intro']
+        else:
+            try:
+                s = self.music_playlist.pop()
+            except IndexError as e:
+                self.music_playlist = [str(_) for _ in self.music_played]
+                del self.music_played[:]
+                s = self.music_playlist.pop()
         self.current_song = load_audio(s)
         self.music_played.append(str(s))
         self.current_song.play()
@@ -257,6 +259,10 @@ class MachineWerkz(App):
             return True
         if last != name and name in ['menu', 'game']:
             self.piece.pause()
+            if self.music_state:
+                if self.current_song:
+                    self.current_song.stop()
+                    self.play_music()
             self.__knock = 0
         return True
 
