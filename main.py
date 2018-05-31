@@ -33,7 +33,7 @@ PLAYLIST = [
 ]
 shuffle(PLAYLIST)
 
-__version__ = "0.4.0"
+__version__ = "0.4.1"
 
 # for debugging on desktop, set window size
 if platform in ['linux', 'windows', 'macosx']:
