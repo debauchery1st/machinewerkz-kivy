@@ -1,16 +1,4 @@
-# machinewerkz-kivy
-
-
-a [Kivy](https://kivy.org)
-wrapped finite state machine written in [Python](http://www.python.org)
-
-![screenshot](screenshot-thumb.png)
-
-
-
-
-
-### audio credits
+### credits
 This open source project uses these sounds from [freesound](https://freesound.org/) :\
 \
 [Magic Wand](http://freesound.org/people/Timbre/sounds/221683/), 
