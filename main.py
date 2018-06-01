@@ -190,7 +190,8 @@ class MachineWerkz(App):
         self.__manager.add_widget(GameScreen(name='game'))
         self.__manager.add_widget(SettingsScreen(name='settings'))
         self.__manager.add_widget(FileBrowserScreen(name='file_box'))
-        self.play_music()
+        if self.music_state:
+            self.play_music()
         return self.__manager
 
     def init_device(self, *args):
@@ -224,6 +225,8 @@ class MachineWerkz(App):
                 self.current_song.stop()
             except TypeError:
                 pass
+            except AttributeError as e:
+                raise e
             return "MUSIC OFF"
         # music for menus
         if self.__manager is not None and (self.__manager.current not in ['game']):
