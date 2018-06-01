@@ -18,8 +18,15 @@ from game import Borg, Picard, LEFT, RIGHT
 
 Config.set('kivy', 'exit_on_escape', '0')
 
-FX = fx_dict(path.join(getcwd(), 'data/audio/fx'))
-PLAYLIST = music_list(path.join(getcwd(), 'data/audio/music'))
+try:
+    FX = fx_dict(path.join(getcwd(), 'data/audio/fx'))
+except:
+    FX = {}
+
+try:
+    PLAYLIST = music_list(path.join(getcwd(), 'data/audio/music'))
+except:
+    PLAYLIST = []
 
 SU = 50
 COLS = 10
@@ -190,8 +197,7 @@ class MachineWerkz(App):
         self.__manager.add_widget(GameScreen(name='game'))
         self.__manager.add_widget(SettingsScreen(name='settings'))
         self.__manager.add_widget(FileBrowserScreen(name='file_box'))
-        if self.music_state:
-            self.play_music()
+        self.play_music()
         return self.__manager
 
     def init_device(self, *args):
@@ -226,11 +232,16 @@ class MachineWerkz(App):
             except TypeError:
                 pass
             except AttributeError as e:
+                if 'NoneType' in e:
+                    pass
                 raise e
             return "MUSIC OFF"
         # music for menus
         if self.__manager is not None and (self.__manager.current not in ['game']):
-            s = FX['intro']
+            try:
+                s = FX['intro']
+            except KeyError:
+                return
         else:
             try:
                 s = self.music_playlist.pop()
@@ -305,11 +316,12 @@ class MachineWerkz(App):
         return "{}".format(res[0])
 
     def on_stop(self):
-        try:
-            print('stopping music')
-            self.current_song.stop()
-        except TypeError as e:
-            print('TYPE ERROR: ', e)
+        if self.current_song:
+            try:
+                print('stopping music')
+                self.current_song.stop()
+            except TypeError as e:
+                print('TYPE ERROR: ', e)
 
     def file_select(self, selection, p):
         available = []
