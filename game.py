@@ -8,12 +8,12 @@ UP, DOWN = 1, 2
 LEFT, RIGHT = 3, 4
 
 
-class Picard:
+class PuzzlePiece:
     def __init__(self, **kwargs):
-        if Picard.__instance__ is None:
-            Picard.__instance__ = Picard.__Picard__(**kwargs)
+        if PuzzlePiece.__instance__ is None:
+            PuzzlePiece.__instance__ = PuzzlePiece.__PuzzlePiece__(**kwargs)
 
-    class __Picard__:
+    class __PuzzlePiece__:
         display_x, display_y = 0, 0
         grid_x, grid_y = 1, 1
         shape, state, screen, = 0, 0, None
@@ -133,9 +133,9 @@ class Picard:
             if not self.game_on:
                 self.__draw_board(cb=cb, acb=acb)
                 return True, "finished"
-            locutus, of_borg = self.replicate(self.board.grid, 2)  # replicate
+            clone, of_gameboard = self.replicate(self.board.grid, 2)  # replicate
             z = self.__translate()  # translate
-            error, msg = self.in_bounds(locutus, z)
+            error, msg = self.in_bounds(clone, z)
             # are we out of bounds?
             if error == 4:
                 # ceiling
@@ -146,7 +146,7 @@ class Picard:
                 scr = []
                 board = self.__draw_board(board=self.swap, keeping_score=True, cb=cb, acb=acb)
                 self.swap = board
-                del locutus, of_borg
+                del clone, of_gameboard
                 if error == 3:
                     # have we hit the floor?
                     return False, msg
@@ -154,13 +154,13 @@ class Picard:
             # in bounds,
             try:
                 for _x, _y in z:
-                    locutus[_y][_x] = 1  # simulate
+                    clone[_y][_x] = 1  # simulate
             except IndexError as e:
                 raise e
             # does it overlap ?
-            if not self.overlap(of_borg, locutus, z):
-                self.swap = self.replicate(locutus, 1)[0]
-                self.__draw_board(board=locutus, cb=cb, acb=acb)
+            if not self.overlap(of_gameboard, clone, z):
+                self.swap = self.replicate(clone, 1)[0]
+                self.__draw_board(board=clone, cb=cb, acb=acb)
                 self.__ceil = 0
                 result = True, 'ok'
             else:
@@ -168,7 +168,7 @@ class Picard:
                     self.game_over()
                 self.__draw_board(board=self.swap, keeping_score=True, cb=cb, acb=acb)
                 result = False, "overlap"
-            del locutus, of_borg
+            del clone, of_gameboard
             return result
 
         def swap_grid(self, grid=None):
@@ -234,15 +234,15 @@ class Picard:
     __instance__ = None
 
     def __getattr__(self, item):
-        if Picard.__instance__:
-            return getattr(Picard.__instance__, item)
+        if PuzzlePiece.__instance__:
+            return getattr(PuzzlePiece.__instance__, item)
 
     def __setattr__(self, key, value):
-        if Picard.__instance__:
-            return setattr(Picard.__instance__, key, value)
+        if PuzzlePiece.__instance__:
+            return setattr(PuzzlePiece.__instance__, key, value)
 
 
-class Borg:
+class GameBoard:
     _shared_state = {}
 
     def __init__(self, **kwargs):

@@ -36,14 +36,6 @@
         FileChooserListLayout
 
 
-<TileWidget>
-    source: self.LIT_IMG if self.LIT else self.DARK_IMG
-    allow_stretch: True
-    keep_ratio: False
-    on_press:
-        app.modify_state(self.grid_pos)
-
-
 <MainMenu>
     orientation: "vertical"
     canvas.before:
@@ -74,7 +66,10 @@
     Label:
         size_hint_y: .03
 
-<GameGridLayout>
+
+<GameBoardLayout>
+    PuzzleGameWidget:
+        size: root.size
 
 
 <BoundingBox>:
@@ -89,7 +84,7 @@
         font_size: '18sp'
         text: app.current_score
         size_hint_y: .03
-    GameGridLayout:
+    GameBoardLayout:
         size_hint_y: .97
 
 

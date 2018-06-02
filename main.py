@@ -1,31 +1,34 @@
 from os import getcwd, path, listdir
+from time import time
 from random import randint, shuffle
 from kivy.app import App
 from kivy.uix.boxlayout import BoxLayout
-from kivy.uix.gridlayout import GridLayout
 from kivy.uix.image import Image
-from kivy.uix.button import ButtonBehavior
 from kivy.uix.widget import Widget
+from kivy.graphics.instructions import InstructionGroup
+from kivy.graphics.vertex_instructions import Rectangle
 from kivy.config import Config
 from kivy.clock import Clock, mainthread
-from kivy.properties import StringProperty, BooleanProperty
+from kivy.properties import StringProperty
 from kivy.utils import platform
 from kivy.uix.screenmanager import ScreenManager, Screen
 from kivy.core.window import Window
 
 from audio import load_audio, music_list, fx_dict
-from game import Borg, Picard, LEFT, RIGHT
+from game import PuzzlePiece, GameBoard, LEFT, RIGHT
 
 Config.set('kivy', 'exit_on_escape', '0')
 
+
+# this will all be in the config file. ignore the broad exception for now.
 try:
     FX = fx_dict(path.join(getcwd(), 'data/audio/fx'))
-except:
+except Exception as e:
     FX = {}
 
 try:
     PLAYLIST = music_list(path.join(getcwd(), 'data/audio/music'))
-except:
+except Exception as e:
     PLAYLIST = []
 
 SU = 50
@@ -38,7 +41,7 @@ DELAY = 50
 
 shuffle(PLAYLIST)
 
-__version__ = "0.4.3"
+__version__ = "0.5.0"
 
 # for debugging on desktop, set window size
 if platform in ['linux', 'windows', 'macosx']:
@@ -81,40 +84,51 @@ class BoundingBox(BoxLayout):
     pass
 
 
-class PuzzleGame(Widget):
+class PuzzleGameWidget(Widget):
     tock = 0
     last_state = None
     event = None
+    LIT_IMG = StringProperty("data/img/steampunk.png")
+    DARK_IMG = StringProperty("data/img/empty.png")
+    texture = Image(source="data/img/steampunk.png").texture
+    piece_group = None
+    last_t = 0
+    test_event = None
 
     def __init__(self, **kwargs):
-        super(PuzzleGame, self).__init__(**kwargs)
+        super(PuzzleGameWidget, self).__init__(**kwargs)
         app = App.get_running_app()
         self.piece = app.piece
         self.board = app.game_board
-        self.set_interval(app.fall_speed)
+        self.piece_group = InstructionGroup()
+        self.canvas.add(self.piece_group)
+        Clock.schedule_interval(self.next_state, .1)
 
-    def set_interval(self, speed):
-        if self.event is not None:
-            self.event.cancel()
-        self.event = Clock.schedule_interval(self.tick, speed)
-
-    def tick(self, *args):
-        self.tock += 1
-        if self.piece.game_on:
-            self.piece.fall()
-        self.next_state()
+    def on_touch_down(self, touch):
+        app = App.get_running_app()
+        su = get_square_unit(COLS)
+        _x, _y = touch.pos
+        x, y = _x/su, _y/su
+        app.modify_state([int(x), int(y)])
 
     @mainthread
-    def draw_method(self, grid, *args, **kwargs):
-        # "set" changed tiles
-        app = App.get_running_app()
+    def draw_method(self, grid):
+        # update InstructionGroup() for widget canvas
+        self.piece_group.clear()
         for y in range(len(grid)):
             for x in range(len(grid[0])):
-                app.widget_grid[y][x].LIT = [False, True][int(grid[y][x])]
+                lit = [False, True][int(grid[y][x])]
+                if lit:
+                    rx = x * self.board.square_unit
+                    ry = Window.height - y * self.board.square_unit
+                    self.piece_group.add(
+                        Rectangle(texture=self.texture, pos=(rx, ry),
+                                  size=[self.board.square_unit, self.board.square_unit])
+                    )
         return grid
 
     @mainthread
-    def next_state(self):
+    def next_state(self, dt):
         app = App.get_running_app()
         ok, msg = self.piece.cb_draw(cb=self.draw_method, acb=app.audio_callback)
         if not ok:
@@ -124,67 +138,56 @@ class PuzzleGame(Widget):
             app.current_score = self.piece.text_score[0]
             # check if
             return True
-        try:
-            for y in range(len(self.piece.board.grid)):
-                for x in range(len(self.piece.board.grid[0])):
-                    app.widget_grid[y][x].LIT = [False, True][int(self.piece.board.grid[y][x])]
-        except Exception as e:
-            raise e
+        elapsed = time() - self.last_t
+        if elapsed >= app.fall_speed and self.piece.game_on:
+            self.piece.fall()
+            self.last_t = time()
 
 
-class TileWidget(ButtonBehavior, Image):
-    grid_id = StringProperty()
-    grid_pos = (0, 0)
-    CURRENT = StringProperty()
-    LIT_IMG = StringProperty("data/img/steampunk.png")
-    DARK_IMG = StringProperty("data/img/empty.png")
-    LIT = BooleanProperty(False)
-
-    def __init__(self, **kwargs):
-        super(TileWidget, self).__init__(**kwargs)
-
-    def pressed_(self, *args, **kwargs):
-        app = App.get_running_app()
-        app.modify(self.grid_pos)
+def screen_grid(rows, cols):
+    res = []
+    u = Window.size[0] / float(cols)
+    for y in range(rows):
+        res.append([])
+        for _ in range(cols):
+            res[y].append([u*_, Window.size[1] - u*y])
+    return res
 
 
-class GameGridLayout(GridLayout):
+def get_square_unit(cols):
+    return Window.size[0] / float(cols)
+
+
+class GameBoardLayout(BoxLayout):
     cols = COLS
     rows = ROWS
+    screen_su = None
 
     def __init__(self, **kwargs):
-        super(GameGridLayout, self).__init__(**kwargs)
+        super(GameBoardLayout, self).__init__(**kwargs)
         app = App.get_running_app()
-        game_board = Borg(cols=COLS, rows=ROWS, square_unit=SU)
-        app.widget_grid = []
-        # point <--> widget
-        for y in range(game_board.rows):
-            app.widget_grid.append([])
-            for x in range(game_board.cols):
-                t = TileWidget()
-                t.grid_id = "x{}y{}".format(str(y), str(x))
-                t.grid_pos = (x, y)
-                self.add_widget(t)
-                app.widget_grid[y].append(t)
+        game_board = GameBoard(cols=COLS, rows=ROWS, square_unit=get_square_unit(COLS))
         app.game_board = game_board
-        piece = Picard(square_unit=SU, shape=randint(0, 6), state=True,
+        self.screen_su = get_square_unit(self.cols)
+        app.widget_grid = screen_grid(self.rows, self.cols)
+        piece = PuzzlePiece(square_unit=SU, shape=randint(0, 6), state=True,
                        board=app.game_board, restart_callback=app.widget_reset)
         app.piece = piece
-        app.game_engine = PuzzleGame()
-        app.widget_grid = app.widget_grid
+        app.game_engine = PuzzleGameWidget()
 
 
 class MachineWerkz(App):
     lit = list()
     game_board, piece, game_engine = None, None, None
     widget_grid = None
-    fall_speed = 0.7
+    fall_speed = .9
     current_score = StringProperty('machine werkz')
     current_song = None
     music_state = True
     music_location = 'default'
     music_playlist = []
     music_played = []
+    event = None
     spinner = None
     __manager = None
     __knock = 0
@@ -294,23 +297,19 @@ class MachineWerkz(App):
         return True
 
     def widget_reset(self):
-        for y in range(len(self.game_board.grid)):
-            for x in range(len(self.game_board.grid[0])):
-                self.widget_grid[y][x].LIT = [False, True][int(self.game_board.grid[y][x])]
+        self.game_board.reset()
         self.current_score = 'machine werkz'
+        self.piece.pause()
 
     def change_speed(self, t):
         try:
             res = {
-                'Rolling/Packing': ('play whilst otherwise occupied', 0.7),
-                'Smoking/Vaping': ('play while one hand is occupied', 0.6),
-                'Chilling': ('just chilling', 0.5),
+                'Rolling/Packing': ('play whilst otherwise occupied', 0.9),
+                'Smoking/Vaping': ('play while one hand is occupied', 0.8),
+                'Chilling': ('just chilling', 0.7),
                 'L': ('good luck', 0.3)
             }[t]
-            if res[1] != self.fall_speed:
-                # change speed
-                self.fall_speed = res[1]
-                self.game_engine.set_interval(self.fall_speed)
+            self.fall_speed = res[1]
         except KeyError:
             return ""
         return "{}".format(res[0])
