@@ -1,5 +1,5 @@
 from os import getcwd, path, listdir
-from time import time
+from time import time, sleep
 from random import randint, shuffle
 from kivy.app import App
 from kivy.uix.boxlayout import BoxLayout
@@ -12,42 +12,64 @@ from kivy.clock import Clock, mainthread
 from kivy.properties import StringProperty
 from kivy.utils import platform
 from kivy.uix.screenmanager import ScreenManager, Screen
+from kivy.logger import Logger
+from kivy.uix.settings import SettingsWithSpinner
 from kivy.core.window import Window
+from audio import fx_dict, music_list
 
-from audio import load_audio, music_list, fx_dict
-from game import PuzzlePiece, GameBoard, LEFT, RIGHT
+from audio import load_audio
+from game import PuzzlePiece, GameBoard, LEFT, RIGHT, screen_grid, get_square_unit
+
+try:
+    Logger.info('[MachineWerkz] setting defaults')
+    MW_DEFAULT = {
+        'fx_folder': path.join(getcwd(), 'data/audio/fx'),
+        'music_folder': path.join(getcwd(), 'data/audio/music'),
+        'cols': "10",
+        'rows': "18",
+        'square_unit': "50"
+    }
+except Exception as e:
+    raise e
+SU = int(MW_DEFAULT['square_unit'])
+ROWS = int(MW_DEFAULT['rows'])
+COLS = int(MW_DEFAULT['cols'])
+
+INI = path.join(getcwd(), 'machinewerkz.ini')
+
+if path.isfile(INI):
+    Config.read(INI)
+    Logger.info('[MachineWerkz] loading configuration')
+    PLAYLIST = music_list(Config.get('machinewerkz', 'music_folder'))
+    FX = fx_dict(Config.get('machinewerkz', 'fx_folder'))
+    ROWS = int(Config.get('machinewerkz', 'rows'))
+    COLS = int(Config.get('machinewerkz', 'cols'))
+else:
+    PLAYLIST = music_list(MW_DEFAULT['music_folder'])
+    FX = fx_dict(MW_DEFAULT['fx_folder'])
+    ROWS = int(MW_DEFAULT['rows'])
+    COLS = int(MW_DEFAULT['cols'])
+
+
+if not platform in ['linux', 'window', 'mac']:
+    SU = Window.size[0] / float(COLS)
+
+SCREEN_WIDTH = SU * COLS
+SCREEN_HEIGHT = SU * ROWS
+
+Window.size = (SCREEN_WIDTH, SCREEN_HEIGHT)
+
+SU = Window.size[0] / float(COLS)
+
+print(SU)
+
+Config.window_icon = path.join(getcwd(), 'data/img/steampunk.png')
+
 
 Config.set('kivy', 'exit_on_escape', '0')
 
+__version__ = "0.5.1"
 
-# this will all be in the config file. ignore the broad exception for now.
-try:
-    FX = fx_dict(path.join(getcwd(), 'data/audio/fx'))
-except Exception as e:
-    FX = {}
-
-try:
-    PLAYLIST = music_list(path.join(getcwd(), 'data/audio/music'))
-except Exception as e:
-    PLAYLIST = []
-
-SU = 50
-COLS = 10
-ROWS = 18
-SCREEN_WIDTH = SU * COLS
-SCREEN_HEIGHT = SU * ROWS
-DELAY = 50
-
-
-shuffle(PLAYLIST)
-
-__version__ = "0.5.0"
-
-# for debugging on desktop, set window size
-if platform in ['linux', 'windows', 'macosx']:
-    from kivy.core.window import Window
-    Window.size = (SCREEN_WIDTH, SCREEN_HEIGHT)
-    Config.window_icon = path.join(getcwd(), 'data/img/steampunk.png')
 
 Config.set('graphics', 'resizable', '0')
 
@@ -106,7 +128,7 @@ class PuzzleGameWidget(Widget):
 
     def on_touch_down(self, touch):
         app = App.get_running_app()
-        su = get_square_unit(COLS)
+        su = get_square_unit(COLS, Window.size[0])
         _x, _y = touch.pos
         x, y = _x/su, _y/su
         app.modify_state([int(x), int(y)])
@@ -120,7 +142,7 @@ class PuzzleGameWidget(Widget):
                 lit = [False, True][int(grid[y][x])]
                 if lit:
                     rx = x * self.board.square_unit
-                    ry = Window.height - y * self.board.square_unit
+                    ry = Window.height - (y+1) * self.board.square_unit
                     self.piece_group.add(
                         Rectangle(texture=self.texture, pos=(rx, ry),
                                   size=[self.board.square_unit, self.board.square_unit])
@@ -130,6 +152,7 @@ class PuzzleGameWidget(Widget):
     @mainthread
     def next_state(self, dt):
         app = App.get_running_app()
+        f_speed = app.fall_speed
         ok, msg = self.piece.cb_draw(cb=self.draw_method, acb=app.audio_callback)
         if not ok:
             self.piece.swap_grid()
@@ -139,23 +162,9 @@ class PuzzleGameWidget(Widget):
             # check if
             return True
         elapsed = time() - self.last_t
-        if elapsed >= app.fall_speed and self.piece.game_on:
+        if elapsed >= f_speed and self.piece.game_on:
             self.piece.fall()
             self.last_t = time()
-
-
-def screen_grid(rows, cols):
-    res = []
-    u = Window.size[0] / float(cols)
-    for y in range(rows):
-        res.append([])
-        for _ in range(cols):
-            res[y].append([u*_, Window.size[1] - u*y])
-    return res
-
-
-def get_square_unit(cols):
-    return Window.size[0] / float(cols)
 
 
 class GameBoardLayout(BoxLayout):
@@ -166,10 +175,10 @@ class GameBoardLayout(BoxLayout):
     def __init__(self, **kwargs):
         super(GameBoardLayout, self).__init__(**kwargs)
         app = App.get_running_app()
-        game_board = GameBoard(cols=COLS, rows=ROWS, square_unit=get_square_unit(COLS))
+        game_board = GameBoard(cols=COLS, rows=ROWS, square_unit=SU)
         app.game_board = game_board
-        self.screen_su = get_square_unit(self.cols)
-        app.widget_grid = screen_grid(self.rows, self.cols)
+        self.screen_su = get_square_unit(self.cols, Window.size[0])
+        app.widget_grid = screen_grid(self.rows, self.cols, Window.size)
         piece = PuzzlePiece(square_unit=SU, shape=randint(0, 6), state=True,
                        board=app.game_board, restart_callback=app.widget_reset)
         app.piece = piece
@@ -187,12 +196,14 @@ class MachineWerkz(App):
     music_location = 'default'
     music_playlist = []
     music_played = []
+    fx_bucket = []
     event = None
     spinner = None
     __manager = None
     __knock = 0
 
     def build(self, **kwargs):
+        self.settings_cls = SettingsWithSpinner
         self.bind(on_start=self.init_device)
         self.music_playlist = [str(_) for _ in PLAYLIST]
         self.__manager = ScreenManager()
@@ -200,8 +211,28 @@ class MachineWerkz(App):
         self.__manager.add_widget(GameScreen(name='game'))
         self.__manager.add_widget(SettingsScreen(name='settings'))
         self.__manager.add_widget(FileBrowserScreen(name='file_box'))
+        shuffle(PLAYLIST)
         self.play_music()
         return self.__manager
+
+    def build_config(self, config):
+        config.setdefaults('machinewerkz', {
+            'fx_folder': path.join(getcwd(), 'data/audio/fx'),
+            'music_folder': path.join(getcwd(), 'data/audio/music'),
+            'cols': '10',
+            'rows': '18',
+            'square_unit': '50',
+            'fall_speed': '1.618'
+        })
+
+    def build_settings(self, settings):
+        settings.add_json_panel('machinewerkz', self.config, path.join(getcwd(), 'machinewerkz.json'))
+
+    def on_config_change(self, config, section, key, value):
+        if key == 'fall_speed':
+            self.fall_speed = float(value)
+        config.set(section, key, value)
+        config.write()
 
     def init_device(self, *args):
         self.piece.pause()
@@ -214,13 +245,20 @@ class MachineWerkz(App):
                 return self.stop()
             return self.change_screen('menu')
 
+    def empty_fx_bucket(self):
+        for _ in range(len(self.fx_bucket)):
+            _ = self.fx_bucket.pop(0)
+            _.stop()
+            del _
+
     def audio_callback(self, audio_type, audio_name, extra=None):
-        # print('Audio Callback: ', audio_type, audio_name, extra)
+        if len(self.fx_bucket) > 10:
+            self.empty_fx_bucket()
         if audio_type in ['fx', 'FX']:
             try:
                 _ = load_audio(FX[audio_name])
                 _.play()
-                del _
+                self.fx_bucket.append(_)
             except KeyError:
                 pass
 
@@ -301,31 +339,43 @@ class MachineWerkz(App):
         self.current_score = 'machine werkz'
         self.piece.pause()
 
+    def get_speed(self, s):
+        try:
+            i = ["1.618", "1.2", "0.9", "0.5"].index(self.config.get('machinewerkz', 'fall_speed'))
+        except ValueError:
+            i = 4
+        return ['Default', 'Intermediate', 'Advanced', 'Let me at em', "Custom"][i]
+
     def change_speed(self, t):
+        a, b, c, d = (1.618, 1.2, 0.9, 0.5)
         try:
             res = {
-                'Rolling/Packing': ('play whilst otherwise occupied', 0.9),
-                'Smoking/Vaping': ('play while one hand is occupied', 0.8),
-                'Chilling': ('just chilling', 0.7),
-                'L': ('good luck', 0.3)
+                'Default': ('play whilst otherwise occupied', a),
+                'Intermediate': ('not so slow', b),
+                'Advanced': ('just chilling', c),
+                'Let me at em': ('good luck', d)
             }[t]
             self.fall_speed = res[1]
+            self.config.set('machinewerkz', 'fall_speed', res[1])
+            self.config.write()
         except KeyError:
             return ""
         return "{}".format(res[0])
 
     def on_stop(self):
+        self.empty_fx_bucket()
         if self.current_song:
             try:
-                print('stopping music')
+                Logger.info('[MachineWerkz] stopping music')
                 self.current_song.stop()
-            except TypeError as e:
-                print('TYPE ERROR: ', e)
+            except Exception as e:
+                Logger.error('[MachineWerkz?] {}'.format(e))
+        super(MachineWerkz, self).on_stop()
 
     def file_select(self, selection, p):
         available = []
         if len(selection) > 0:
-            print("Selected : {}".format(selection))
+            Logger.info("Selected : {}".format(selection))
             for _ in selection:
                 if _[-4:] in ['.mp3', '.ogg']:
                     available.append(path.join(p, _))
@@ -335,10 +385,10 @@ class MachineWerkz(App):
                     available.append(path.join(p, _))
         if len(available) > 0:
             try:
-                print('stopping music')
+                Logger.info('[MachineWerkz] stopping music')
                 self.current_song.stop()
             except TypeError as e:
-                print('TYPE ERROR: ', e)
+                Logger.error('[MachineWerkz?] {}'.format(e))
             self.music_state = False
             self.music_playlist = available
             self.music_played = [PLAYLIST]
@@ -351,13 +401,16 @@ class MachineWerkz(App):
 
     def reset_music(self):
         try:
-            print('stopping music')
+            Logger.info('[MachineWerkz] stopping music')
             self.current_song.stop()
-        except TypeError as e:
-            print('TYPE ERROR: ', e)
+            sleep(.1)
+        except Exception as e:
+            Logger.error('[MachineWerkz?] {}'.format(e))
         self.music_playlist = [str(_) for _ in PLAYLIST]
+        self.music_state = True
+        self.music_played = []
         shuffle(self.music_playlist)
-        if not self.music_state:
+        if self.current_song.state == 'stop':
             self.toggle_music()
 
 

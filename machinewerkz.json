@@ -1,0 +1,44 @@
+[
+  {
+    "type": "path",
+    "title": "FX Folder",
+    "desc": "location of sound fx",
+    "section": "machinewerkz",
+    "key": "fx_folder"
+  },
+  {
+    "type": "path",
+    "title": "Music Folder",
+    "desc": "location of music",
+    "section": "machinewerkz",
+    "key": "music_folder"
+  },
+  {
+    "type": "numeric",
+    "title": "Columns",
+    "desc": "number of columns",
+    "section": "machinewerkz",
+    "key": "cols"
+  },
+  {
+    "type": "numeric",
+    "title": "Rows",
+    "desc": "number of rows",
+    "section": "machinewerkz",
+    "key": "rows"
+  },
+  {
+    "type": "numeric",
+    "title": "Square Unit",
+    "desc": "the width and height of a single block",
+    "section": "machinewerkz",
+    "key": "square_unit"
+  },
+  {
+    "type": "numeric",
+    "title": "Speed",
+    "desc": "how fast the piece falls",
+    "section": "machinewerkz",
+    "key": "fall_speed"
+  }
+]

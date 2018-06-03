@@ -5,8 +5,8 @@ from os import listdir, path
 
 def audio_files(folder=None):
     OK_SOUNDS = ['mp3', 'ogg', 'wav']
-    if folder is None:
-        return None
+    if folder is None or not path.isdir(folder):
+        return []
     return [path.join(folder, _) for _ in listdir(folder) if str(_)[-3:] in OK_SOUNDS]
 
 

@@ -8,6 +8,22 @@ UP, DOWN = 1, 2
 LEFT, RIGHT = 3, 4
 
 
+def screen_grid(rows, cols, size):
+    res = []
+    width, height = size
+    u = width / float(cols)
+    for y in range(rows):
+        res.append([])
+        for _ in range(cols):
+            res[y].append([u*_, height - u*y])
+    # print([size, (rows, cols)])
+    return res
+
+
+def get_square_unit(rows, height):
+    return height / float(rows)
+
+
 class PuzzlePiece:
     def __init__(self, **kwargs):
         if PuzzlePiece.__instance__ is None:
@@ -34,7 +50,7 @@ class PuzzlePiece:
                 self.move(RIGHT)
                 self.move(RIGHT)
                 self.shape = randrange(100) % 7
-                print(self.shape)
+                # print(self.shape)
 
         def __score_text(self):
             if self.game_on:
@@ -64,7 +80,7 @@ class PuzzlePiece:
                 grid.insert(0, [0 for _ in range(l)])
                 total += l
             if total == l*l:
-                print('bonus!')
+                # print('bonus!')
                 total += l*2
             self.score += total
             self.__lvct += total % 100
@@ -104,7 +120,7 @@ class PuzzlePiece:
                     self.restart_game()
 
         def restart_game(self):
-            print('restarting game')
+            # print('restarting game')
             x = (self.board.cols * self.board.square_unit) - self.board.square_unit*3
             self.text_size = int(self.board.square_unit / 4)
             self.text_pos = [x, 0]
@@ -227,7 +243,7 @@ class PuzzlePiece:
         def overlap(grid_one, grid_two, points):
             z = [(grid_one[y][x] + grid_two[y][x]) for x, y in points]
             if 2 in z:
-                # print('overlap')
+                # # print('overlap')
                 return True
             return False
 
@@ -254,7 +270,7 @@ class GameBoard:
             for _ in ['square_unit', 'cols', 'rows']:
                 assert _ in kwargs.keys()
         except Exception as e:
-            print("requires : {}".format(['square_unit', 'cols', 'rows']))
+            # print("requires : {}".format(['square_unit', 'cols', 'rows']))
             raise e
         # assimilate primitives
         for prim in kwargs.keys():
