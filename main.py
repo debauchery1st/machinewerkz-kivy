@@ -107,7 +107,7 @@ class PuzzleGameWidget(Widget):
             self.piece.swap_grid()
             self.piece.shape_shift()
             self.piece.reset()
-            app.current_score = self.piece.text_score[0]
+            app.current_score = ' | '.join(self.piece.text_score)
             # check if
             return True
         elapsed = time() - self.last_t
@@ -142,6 +142,7 @@ class MachineWerkz(App):
     widget_grid = None
     fall_speed = .9
     current_score = StringProperty('machine werkz')
+    latest_msg = StringProperty('press play')
     current_song = None
     music_state = True
     music_location = 'default'
@@ -269,6 +270,7 @@ class MachineWerkz(App):
 
     def change_screen(self, name, angle="right"):
         self.__manager.transition.direction = angle
+        self.latest_msg = " | ".join(self.piece.text_score)
         last = str(self.__manager.current)
         try:
             self.__manager.current = name

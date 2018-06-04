@@ -50,6 +50,10 @@
         font_name: 'data/fonts/Playfair_Display/PlayfairDisplay-Regular.ttf'
         text: "machine werkz"
         size_hint_y: .03
+    Label:
+        font_name: 'data/fonts/Playfair_Display/PlayfairDisplay-Regular.ttf'
+        text: app.latest_msg
+        size_hint_y: .03
     Button:
         background_color: 0, 0, 0, 0
         font_name: 'data/fonts/Playfair_Display/PlayfairDisplay-Regular.ttf'
@@ -81,7 +85,7 @@
     Label:
         font_name: 'data/fonts/Playfair_Display/PlayfairDisplay-Regular.ttf'
         font_size: '18sp'
-        text: app.current_score
+        text: ' '.join(app.current_score)
         size_hint_y: .05
     PuzzleGameWidget:
         padding: [0, 0, 0, 0]
