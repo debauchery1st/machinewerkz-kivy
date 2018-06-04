@@ -1,5 +1,6 @@
 from os import getcwd, path, listdir
 from time import time, sleep
+
 from random import randint, shuffle
 from kivy.app import App
 from kivy.uix.boxlayout import BoxLayout
@@ -7,71 +8,23 @@ from kivy.uix.image import Image
 from kivy.uix.widget import Widget
 from kivy.graphics.instructions import InstructionGroup
 from kivy.graphics.vertex_instructions import Rectangle
-from kivy.config import Config
 from kivy.clock import Clock, mainthread
 from kivy.properties import StringProperty
-from kivy.utils import platform
 from kivy.uix.screenmanager import ScreenManager, Screen
 from kivy.logger import Logger
 from kivy.uix.settings import SettingsWithSpinner
 from kivy.core.window import Window
-from audio import fx_dict, music_list
+from kivy.utils import platform
+
 
 from audio import load_audio
-from game import PuzzlePiece, GameBoard, LEFT, RIGHT, screen_grid, get_square_unit
+from machinewerkz import PuzzlePiece, GameBoard, LEFT, RIGHT, screen_grid, get_square_unit
+from settings import default_settings
 
-try:
-    Logger.info('[MachineWerkz] setting defaults')
-    MW_DEFAULT = {
-        'fx_folder': path.join(getcwd(), 'data/audio/fx'),
-        'music_folder': path.join(getcwd(), 'data/audio/music'),
-        'cols': "10",
-        'rows': "18",
-        'square_unit': "50"
-    }
-except Exception as e:
-    raise e
-SU = int(MW_DEFAULT['square_unit'])
-ROWS = int(MW_DEFAULT['rows'])
-COLS = int(MW_DEFAULT['cols'])
-
-INI = path.join(getcwd(), 'machinewerkz.ini')
-
-if path.isfile(INI):
-    Config.read(INI)
-    Logger.info('[MachineWerkz] loading configuration')
-    PLAYLIST = music_list(Config.get('machinewerkz', 'music_folder'))
-    FX = fx_dict(Config.get('machinewerkz', 'fx_folder'))
-    ROWS = int(Config.get('machinewerkz', 'rows'))
-    COLS = int(Config.get('machinewerkz', 'cols'))
-else:
-    PLAYLIST = music_list(MW_DEFAULT['music_folder'])
-    FX = fx_dict(MW_DEFAULT['fx_folder'])
-    ROWS = int(MW_DEFAULT['rows'])
-    COLS = int(MW_DEFAULT['cols'])
+__version__ = "0.5.2"
 
 
-if not platform in ['linux', 'window', 'mac']:
-    SU = Window.size[0] / float(COLS)
-
-SCREEN_WIDTH = SU * COLS
-SCREEN_HEIGHT = SU * ROWS
-
-Window.size = (SCREEN_WIDTH, SCREEN_HEIGHT)
-
-SU = Window.size[0] / float(COLS)
-
-print(SU)
-
-Config.window_icon = path.join(getcwd(), 'data/img/steampunk.png')
-
-
-Config.set('kivy', 'exit_on_escape', '0')
-
-__version__ = "0.5.1"
-
-
-Config.set('graphics', 'resizable', '0')
+LOCAL_DEFAULTS = default_settings(from_file=True)
 
 
 class FileBox(BoxLayout):
@@ -102,10 +55,6 @@ class MainMenu(BoxLayout):
     pass
 
 
-class BoundingBox(BoxLayout):
-    pass
-
-
 class PuzzleGameWidget(Widget):
     tock = 0
     last_state = None
@@ -116,6 +65,7 @@ class PuzzleGameWidget(Widget):
     piece_group = None
     last_t = 0
     test_event = None
+    padding = [0, 0, 0, 0]
 
     def __init__(self, **kwargs):
         super(PuzzleGameWidget, self).__init__(**kwargs)
@@ -128,7 +78,7 @@ class PuzzleGameWidget(Widget):
 
     def on_touch_down(self, touch):
         app = App.get_running_app()
-        su = get_square_unit(COLS, Window.size[0])
+        su = get_square_unit(LOCAL_DEFAULTS['cols'], Window.size[0])
         _x, _y = touch.pos
         x, y = _x/su, _y/su
         app.modify_state([int(x), int(y)])
@@ -136,17 +86,16 @@ class PuzzleGameWidget(Widget):
     @mainthread
     def draw_method(self, grid):
         # update InstructionGroup() for widget canvas
+        su = Window.width/int(App.get_running_app().config.get('machinewerkz', 'cols'))
+        padding = self.padding[-1]
         self.piece_group.clear()
         for y in range(len(grid)):
             for x in range(len(grid[0])):
                 lit = [False, True][int(grid[y][x])]
                 if lit:
-                    rx = x * self.board.square_unit
-                    ry = Window.height - (y+1) * self.board.square_unit
-                    self.piece_group.add(
-                        Rectangle(texture=self.texture, pos=(rx, ry),
-                                  size=[self.board.square_unit, self.board.square_unit])
-                    )
+                    rx = x * su
+                    ry = Window.height - y * su
+                    self.piece_group.add(Rectangle(texture=self.texture, pos=(rx, ry+padding), size=[su, su]))
         return grid
 
     @mainthread
@@ -168,19 +117,21 @@ class PuzzleGameWidget(Widget):
 
 
 class GameBoardLayout(BoxLayout):
-    cols = COLS
-    rows = ROWS
+    cols = int(LOCAL_DEFAULTS['cols'])
+    rows = int(LOCAL_DEFAULTS['rows'])
     screen_su = None
 
     def __init__(self, **kwargs):
         super(GameBoardLayout, self).__init__(**kwargs)
         app = App.get_running_app()
-        game_board = GameBoard(cols=COLS, rows=ROWS, square_unit=SU)
+        game_board = GameBoard(cols=self.cols, rows=self.rows,
+                               square_unit=float(app.config.get('machinewerkz', 'square_unit')))
         app.game_board = game_board
         self.screen_su = get_square_unit(self.cols, Window.size[0])
         app.widget_grid = screen_grid(self.rows, self.cols, Window.size)
-        piece = PuzzlePiece(square_unit=SU, shape=randint(0, 6), state=True,
-                       board=app.game_board, restart_callback=app.widget_reset)
+        piece = PuzzlePiece(square_unit=LOCAL_DEFAULTS['square_unit'],
+                            shape=randint(0, 6), state=True, board=app.game_board,
+                            restart_callback=app.widget_reset)
         app.piece = piece
         app.game_engine = PuzzleGameWidget()
 
@@ -205,13 +156,13 @@ class MachineWerkz(App):
     def build(self, **kwargs):
         self.settings_cls = SettingsWithSpinner
         self.bind(on_start=self.init_device)
-        self.music_playlist = [str(_) for _ in PLAYLIST]
+        self.music_playlist = [str(_) for _ in LOCAL_DEFAULTS['music']]
         self.__manager = ScreenManager()
         self.__manager.add_widget(MenuScreen(name='menu'))
         self.__manager.add_widget(GameScreen(name='game'))
         self.__manager.add_widget(SettingsScreen(name='settings'))
         self.__manager.add_widget(FileBrowserScreen(name='file_box'))
-        shuffle(PLAYLIST)
+        shuffle(self.music_playlist)
         self.play_music()
         return self.__manager
 
@@ -256,7 +207,7 @@ class MachineWerkz(App):
             self.empty_fx_bucket()
         if audio_type in ['fx', 'FX']:
             try:
-                _ = load_audio(FX[audio_name])
+                _ = load_audio(LOCAL_DEFAULTS['fx'][audio_name])
                 _.play()
                 self.fx_bucket.append(_)
             except KeyError:
@@ -280,7 +231,7 @@ class MachineWerkz(App):
         # music for menus
         if self.__manager is not None and (self.__manager.current not in ['game']):
             try:
-                s = FX['intro']
+                s = LOCAL_DEFAULTS['fx']['intro']
             except KeyError:
                 return
         else:
@@ -353,7 +304,7 @@ class MachineWerkz(App):
                 'Default': ('play whilst otherwise occupied', a),
                 'Intermediate': ('not so slow', b),
                 'Advanced': ('just chilling', c),
-                'Let me at em': ('good luck', d)
+                'Let me atom': ('good luck', d)
             }[t]
             self.fall_speed = res[1]
             self.config.set('machinewerkz', 'fall_speed', res[1])
@@ -391,7 +342,7 @@ class MachineWerkz(App):
                 Logger.error('[MachineWerkz?] {}'.format(e))
             self.music_state = False
             self.music_playlist = available
-            self.music_played = [PLAYLIST]
+            self.music_played = [LOCAL_DEFAULTS['music']]
             try:
                 self.toggle_music()
             except TypeError:
@@ -406,7 +357,7 @@ class MachineWerkz(App):
             sleep(.1)
         except Exception as e:
             Logger.error('[MachineWerkz?] {}'.format(e))
-        self.music_playlist = [str(_) for _ in PLAYLIST]
+        self.music_playlist = [str(_) for _ in LOCAL_DEFAULTS['music']]
         self.music_state = True
         self.music_played = []
         shuffle(self.music_playlist)

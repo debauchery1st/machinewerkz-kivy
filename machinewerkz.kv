@@ -71,11 +71,7 @@
 
 
 <GameBoardLayout>
-    PuzzleGameWidget:
-        size: self.parent.size
-
-
-<BoundingBox>:
+    size: root.size
     canvas.before:
         Rectangle:
             pos: self.pos
@@ -87,9 +83,8 @@
         font_size: '18sp'
         text: app.current_score
         size_hint_y: .05
-    GameBoardLayout:
-        size_hint_y: .95
-
+    PuzzleGameWidget:
+        padding: [0, 0, 0, 0]
 
 <AudioSettings@BoxLayout>:
     size_hint_y: None
@@ -159,7 +154,7 @@
         font_name: 'data/fonts/Playfair_Display/PlayfairDisplay-Regular.ttf'
         font_size: '30sp'
         text: app.get_speed(speed_spinner)
-        values: ('Default', 'Intermediate', 'Advanced', 'Let me at em')
+        values: ('Default', 'Intermediate', 'Advanced', 'Let me atom')
     Label:
         size_hint_y: .1
         font_name: 'data/fonts/Playfair_Display/PlayfairDisplay-Regular.ttf'
@@ -178,7 +173,7 @@
 
 
 <GameScreen>:
-    BoundingBox:
+    GameBoardLayout:
 
 <MenuScreen>:
     MainMenu:

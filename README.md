@@ -7,7 +7,20 @@ wrapped finite state machine written in [Python](http://www.python.org)
 ![screenshot](screenshot-thumb.png)
 
 
+             
+                     [Player]
 
+                        |
+
+                     [Widget]
+                     [Layout]
+                     [Screen]
+                 [Screen Manager]
+                      [App]
+
+                        |
+
+                     [Game]
 
 
 ### audio credits
