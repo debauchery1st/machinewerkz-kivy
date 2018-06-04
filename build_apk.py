@@ -23,12 +23,9 @@ try:
     app_ver = str(
         check_output(["grep", "__version__", "{}/main.py".format(app_source)]).split('"')[1]
     )
-    maj, min, rev = app_ver.split('.')
-    a = int(maj)
-    b = int(min)
-    c = int(rev)
+    _major, _minor, _revision = app_ver.split('.')
     build_log.write("[{}] - [{}] - VERSION : MAJOR {} MINOR {} REVISION {}\n".format(
-        str(datetime.now()), app_name, a, b, c))
+        str(datetime.now()), app_name, int(_major), int(_minor), int(_revision)))
 except Exception as e:
     raise e
 
