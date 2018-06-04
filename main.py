@@ -21,7 +21,7 @@ from audio import load_audio
 from machinewerkz import PuzzlePiece, GameBoard, LEFT, RIGHT, screen_grid, get_square_unit
 from settings import default_settings
 
-__version__ = "0.5.2"
+__version__ = "0.5.3"
 
 
 LOCAL_DEFAULTS = default_settings(from_file=True)
