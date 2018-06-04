@@ -59,12 +59,9 @@ class PuzzleGameWidget(Widget):
     tock = 0
     last_state = None
     event = None
-    LIT_IMG = StringProperty("data/img/steampunk.png")
-    DARK_IMG = StringProperty("data/img/empty.png")
     texture = Image(source="data/img/steampunk.png").texture
     piece_group = None
     last_t = 0
-    test_event = None
     padding = [0, 0, 0, 0]
 
     def __init__(self, **kwargs):
@@ -137,9 +134,7 @@ class GameBoardLayout(BoxLayout):
 
 
 class MachineWerkz(App):
-    lit = list()
     game_board, piece, game_engine = None, None, None
-    widget_grid = None
     fall_speed = .9
     current_score = StringProperty('machine werkz')
     latest_msg = StringProperty('press play')
@@ -149,8 +144,6 @@ class MachineWerkz(App):
     music_playlist = []
     music_played = []
     fx_bucket = []
-    event = None
-    spinner = None
     __manager = None
     __knock = 0
 
