@@ -101,6 +101,7 @@ class PuzzleGameWidget(Widget):
         f_speed = app.fall_speed
         ok, msg = self.piece.cb_draw(cb=self.draw_method, acb=app.audio_callback)
         if not ok:
+            app.audio_callback('fx', 'ratchet')
             self.piece.swap_grid()
             self.piece.shape_shift()
             self.piece.reset()
