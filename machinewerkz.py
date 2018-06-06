@@ -16,12 +16,7 @@ def screen_grid(rows, cols, size):
         res.append([])
         for _ in range(cols):
             res[y].append([u*_, height - u*y])
-    # print([size, (rows, cols)])
     return res
-
-
-def get_square_unit(rows, height):
-    return height / float(rows)
 
 
 class PuzzlePiece:

@@ -4,10 +4,8 @@ from random import randint, shuffle
 
 
 from kivy.app import App
-from kivy.cache import Cache
 from kivy.atlas import Atlas
 from kivy.uix.boxlayout import BoxLayout
-from kivy.uix.image import Image
 from kivy.uix.widget import Widget
 from kivy.graphics.instructions import InstructionGroup
 from kivy.graphics.vertex_instructions import Rectangle
@@ -18,9 +16,8 @@ from kivy.logger import Logger
 from kivy.uix.settings import SettingsWithSpinner
 from kivy.core.window import Window
 
-
 from audio import load_audio
-from machinewerkz import PuzzlePiece, GameBoard, LEFT, RIGHT, screen_grid, get_square_unit
+from machinewerkz import PuzzlePiece, GameBoard, LEFT, RIGHT, screen_grid
 from settings import default_settings
 from styles import soundfx
 
@@ -155,7 +152,8 @@ class GameBoardLayout(BoxLayout):
         game_board = GameBoard(cols=self.cols, rows=self.rows,
                                square_unit=float(app.config.get('machinewerkz', 'square_unit')))
         app.game_board = game_board
-        self.screen_su = get_square_unit(self.cols, Window.size[0])
+        # self.screen_su = get_square_unit(self.cols, Window.size[0])
+        self.screen_su = Window.size[0] / float(self.cols)
         app.widget_grid = screen_grid(self.rows, self.cols, Window.size)
         piece = PuzzlePiece(square_unit=LOCAL_DEFAULTS['square_unit'],
                             shape=randint(0, 6), state=True, board=app.game_board,
@@ -265,7 +263,6 @@ class MachineWerkz(App):
         # music for menus
         if self.__manager is not None and (self.__manager.current not in ['game']):
             try:
-                # s = LOCAL_DEFAULTS['fx']['intro']
                 self.current_song = load_audio(LOCAL_DEFAULTS['fx']['intro'])
                 self.current_song.play()
                 return
@@ -338,7 +335,7 @@ class MachineWerkz(App):
     def level_packs(self):
         # levels = [_ for _ in self.default_atlas.textures.keys() if '2' not in _[-1]]
         # return tuple(levels)
-        # NOTE: more backgrounds needed
+        # NOTE: more backgrounds needed, STATIC UNTIL FINISHED.
         return tuple([u"steampunk", u"80s", u"space", u"metal"])
 
     def get_level(self, t):
