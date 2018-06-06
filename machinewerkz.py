@@ -88,8 +88,11 @@ class PuzzlePiece:
                 self.level += 1
             self.prize = total
             if total > 0 and acb is not None:
-                acb(audio_type='fx', audio_name='magic', extra=total)
+                acb(audio_type='fx', audio_name='wipe', extra=total)
             return grid
+
+        def test(self):
+            return self.__translate()
 
         def __translate(self):
             h, i, j, k, _, _, _, _ = get_shape(

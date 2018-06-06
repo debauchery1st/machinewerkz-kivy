@@ -6,19 +6,19 @@ soundfx = {
         "wipe": "magic"
     },
     "space": {
-        "move": "kick",
-        "rotate": "hat",
-        "lock": "plop",
+        "move": "swedish",
+        "rotate": "snare",
+        "lock": "triangle",
         "wipe": "fireball"
     },
     "80s": {
-        "move": "kick",
+        "move": "swedish",
         "rotate": "hat",
         "lock": "plop",
         "wipe": "fireball"
     },
     "metal": {
-        "move": "kick",
+        "move": "swedish",
         "rotate": "hat",
         "lock": "plop",
         "wipe": "fireball"

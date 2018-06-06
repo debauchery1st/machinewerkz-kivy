@@ -3,12 +3,12 @@ title = Machine Werkz
 package.name = machinewerkz
 package.domain = org.test
 source.dir = .
-source.include_exts = py,png,jpg,kv,atlas,ogg,ttf,json
+source.include_exts = py,png,jpg,kv,atlas,ogg,ttf,json,wav
 version.regex = __version__ = ['"](.*)['"]
 version.filename = %(source.dir)s/main.py
 requirements = kivy, hostpython2, android
-presplash.filename = %(source.dir)s/data/img/loading.png
-icon.filename = %(source.dir)s/data/img/steampunk.png
+presplash.filename = %(source.dir)s/data/images/splash.png
+icon.filename = %(source.dir)s/data/images/icon.png
 orientation = portrait
 fullscreen = 0
 # (str) The Android arch to build for, choices: armeabi-v7a, arm64-v8a, x86

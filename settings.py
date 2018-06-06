@@ -9,7 +9,7 @@ from audio import music_list, fx_dict
 
 
 def load_default_config(from_file=False):
-    Config.window_icon = path.join(getcwd(), 'data/img/steampunk.png')
+    Config.window_icon = path.join(getcwd(), 'data/images/icon.png')
     Config.set('kivy', 'exit_on_escape', '0')
     Config.set('graphics', 'resizable', '0')
 
@@ -31,7 +31,8 @@ def load_default_config(from_file=False):
     if path.isfile(ini) and from_file is True:
         Config.read(ini)
         Logger.info('[MachineWerkz] loading configuration')
-        playlist = music_list(Config.get('machinewerkz', 'music_folder'))
+        music_folder = Config.get('machinewerkz', 'music_folder')
+        playlist = music_list(music_dir=music_folder)
         fx = fx_dict(Config.get('machinewerkz', 'fx_folder'))
         rows = int(Config.get('machinewerkz', 'rows'))
         cols = int(Config.get('machinewerkz', 'cols'))

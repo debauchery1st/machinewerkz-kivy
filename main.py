@@ -1,8 +1,11 @@
 from os import getcwd, path, listdir
 from time import time, sleep
-
 from random import randint, shuffle
+
+
 from kivy.app import App
+from kivy.cache import Cache
+from kivy.atlas import Atlas
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.image import Image
 from kivy.uix.widget import Widget
@@ -14,14 +17,14 @@ from kivy.uix.screenmanager import ScreenManager, Screen
 from kivy.logger import Logger
 from kivy.uix.settings import SettingsWithSpinner
 from kivy.core.window import Window
-from kivy.utils import platform
 
 
 from audio import load_audio
 from machinewerkz import PuzzlePiece, GameBoard, LEFT, RIGHT, screen_grid, get_square_unit
 from settings import default_settings
+from styles import soundfx
 
-__version__ = "0.5.3"
+__version__ = "0.6.0"
 
 
 LOCAL_DEFAULTS = default_settings(from_file=True)
@@ -47,6 +50,14 @@ class GameScreen(Screen):
     pass
 
 
+class LevelScreen(Screen):
+    pass
+
+
+class LevelSelect(BoxLayout):
+    pass
+
+
 class SettingsMenu(BoxLayout):
     pass
 
@@ -59,23 +70,35 @@ class PuzzleGameWidget(Widget):
     tock = 0
     last_state = None
     event = None
-    texture = Image(source="data/img/steampunk.png").texture
+    texture2 = ""
+    texture = ""
+    bkg = StringProperty()
     piece_group = None
     last_t = 0
     padding = [0, 0, 0, 0]
 
     def __init__(self, **kwargs):
         super(PuzzleGameWidget, self).__init__(**kwargs)
+        self.bkg = "data/images/steampunk-bkg.png"
         app = App.get_running_app()
+        self.atlas = app.default_atlas
         self.piece = app.piece
         self.board = app.game_board
         self.piece_group = InstructionGroup()
         self.canvas.add(self.piece_group)
         Clock.schedule_interval(self.next_state, .1)
 
+    def set_level(self, level):
+        app = App.get_running_app()
+        app.level_name = level
+        if path.isfile(path.join(getcwd(), "data/images/{}-bkg.png".format(App.get_running_app().level_name))):
+            app.level_bkg = path.join(getcwd(), "data/images/{}-bkg.png".format(App.get_running_app().level_name))
+            return
+        app.level_bkg = path.join(getcwd(), 'data/images/steampunk-bkg.png')  # default
+
     def on_touch_down(self, touch):
         app = App.get_running_app()
-        su = get_square_unit(LOCAL_DEFAULTS['cols'], Window.size[0])
+        su = Window.width/int(App.get_running_app().config.get('machinewerkz', 'cols'))
         _x, _y = touch.pos
         x, y = _x/su, _y/su
         app.modify_state([int(x), int(y)])
@@ -83,16 +106,24 @@ class PuzzleGameWidget(Widget):
     @mainthread
     def draw_method(self, grid):
         # update InstructionGroup() for widget canvas
-        su = Window.width/int(App.get_running_app().config.get('machinewerkz', 'cols'))
+        app = App.get_running_app()
+        su = Window.width/int(app.config.get('machinewerkz', 'cols'))
         padding = self.padding[-1]
         self.piece_group.clear()
         for y in range(len(grid)):
             for x in range(len(grid[0])):
                 lit = [False, True][int(grid[y][x])]
                 if lit:
-                    rx = x * su
-                    ry = Window.height - y * su
-                    self.piece_group.add(Rectangle(texture=self.texture, pos=(rx, ry+padding), size=[su, su]))
+                    if (x, y) in self.piece.test():
+                        tile = self.atlas["{}2".format(app.level_name)]
+                    else:
+                        tile = self.atlas[app.level_name]
+                    self.piece_group.add(
+                        Rectangle(
+                            texture=tile,
+                            pos=((x * su), Window.height-((y * su)+padding)),
+                            size=[su, su])
+                    )
         return grid
 
     @mainthread
@@ -101,12 +132,11 @@ class PuzzleGameWidget(Widget):
         f_speed = app.fall_speed
         ok, msg = self.piece.cb_draw(cb=self.draw_method, acb=app.audio_callback)
         if not ok:
-            app.audio_callback('fx', 'ratchet')
+            app.audio_callback('fx', 'lock')
             self.piece.swap_grid()
             self.piece.shape_shift()
             self.piece.reset()
             app.current_score = ' | '.join(self.piece.text_score)
-            # check if
             return True
         elapsed = time() - self.last_t
         if elapsed >= f_speed and self.piece.game_on:
@@ -135,10 +165,13 @@ class GameBoardLayout(BoxLayout):
 
 
 class MachineWerkz(App):
+    default_atlas = Atlas('data/images/mw64.atlas')
     game_board, piece, game_engine = None, None, None
     fall_speed = .9
     current_score = StringProperty('machine werkz')
     latest_msg = StringProperty('press play')
+    level_name = ''
+    level_bkg = StringProperty('')
     current_song = None
     music_state = True
     music_location = 'default'
@@ -149,6 +182,8 @@ class MachineWerkz(App):
     __knock = 0
 
     def build(self, **kwargs):
+        self.level_name = 'steampunk'
+        self.level_bkg = path.join(getcwd(), 'data/images/steampunk-bkg.png')  # default
         self.settings_cls = SettingsWithSpinner
         self.bind(on_start=self.init_device)
         self.music_playlist = [str(_) for _ in LOCAL_DEFAULTS['music']]
@@ -157,6 +192,7 @@ class MachineWerkz(App):
         self.__manager.add_widget(GameScreen(name='game'))
         self.__manager.add_widget(SettingsScreen(name='settings'))
         self.__manager.add_widget(FileBrowserScreen(name='file_box'))
+        self.__manager.add_widget(LevelScreen(name='levels'))
         shuffle(self.music_playlist)
         self.play_music()
         return self.__manager
@@ -202,7 +238,10 @@ class MachineWerkz(App):
             self.empty_fx_bucket()
         if audio_type in ['fx', 'FX']:
             try:
-                _ = load_audio(LOCAL_DEFAULTS['fx'][audio_name])
+                if self.level_name in soundfx.keys():
+                    _ = load_audio(LOCAL_DEFAULTS['fx'][soundfx[self.level_name][audio_name]])
+                else:
+                    _ = load_audio(LOCAL_DEFAULTS['fx'][audio_name])
                 _.play()
                 self.fx_bucket.append(_)
             except KeyError:
@@ -226,7 +265,10 @@ class MachineWerkz(App):
         # music for menus
         if self.__manager is not None and (self.__manager.current not in ['game']):
             try:
-                s = LOCAL_DEFAULTS['fx']['intro']
+                # s = LOCAL_DEFAULTS['fx']['intro']
+                self.current_song = load_audio(LOCAL_DEFAULTS['fx']['intro'])
+                self.current_song.play()
+                return
             except KeyError:
                 return
         else:
@@ -250,11 +292,11 @@ class MachineWerkz(App):
         if 11 > pos[0] > 6:
             self.piece.move(RIGHT)
             self.refresh_display()
-            self.audio_callback(audio_type='fx', audio_name='tick')
+            self.audio_callback(audio_type='fx', audio_name='move')
         elif -1 < pos[0] < 4:
             self.piece.move(LEFT)
             self.refresh_display()
-            self.audio_callback(audio_type='fx', audio_name='tick')
+            self.audio_callback(audio_type='fx', audio_name='move')
         elif 3 < pos[0] < 7:
             self.piece.rotate()
             self.refresh_display()
@@ -292,6 +334,19 @@ class MachineWerkz(App):
         except ValueError:
             i = 4
         return ['Default', 'Intermediate', 'Advanced', 'Let me at em', "Custom"][i]
+
+    def level_packs(self):
+        # levels = [_ for _ in self.default_atlas.textures.keys() if '2' not in _[-1]]
+        # return tuple(levels)
+        # NOTE: more backgrounds needed
+        return tuple([u"steampunk", u"80s", u"space", u"metal"])
+
+    def get_level(self, t):
+        res = t.text
+        print(res)
+        if len(res) > 0:
+            return str(res)
+        return "Style"
 
     def change_speed(self, t):
         a, b, c, d = (1.618, 1.2, 0.9, 0.5)

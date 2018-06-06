@@ -1,3 +1,43 @@
+<LevelSelect>
+    size: root.size
+    orientation: "vertical"
+    canvas.before:
+        Rectangle:
+            pos: self.pos
+            size: self.size
+            source: "data/images/steampunk-bkg.png"
+    Label:
+        font_name: 'data/fonts/Playfair_Display/PlayfairDisplay-Regular.ttf'
+        text: "machine werkz"
+        size_hint_y: .03
+    Spinner:
+        background_color: 0, 0, .7, .7
+        id: level_spinner
+        size_hint_y: .2
+        font_name: 'data/fonts/Playfair_Display/PlayfairDisplay-Regular.ttf'
+        font_size: '30sp'
+        text: app.get_level(level_spinner)
+        on_text: app.game_engine.set_level(level_spinner.text)
+        values: app.level_packs()
+    Button:
+        background_color: 0, 0, 0, 0
+        font_name: 'data/fonts/Playfair_Display/PlayfairDisplay-Regular.ttf'
+        font_size: '30sp'
+        text: "PLAY!"
+        size_hint_y: .71
+        on_press: app.change_screen('game', angle='left')
+    Button:
+        background_color: 0, 0, 0, 0
+        font_name: 'data/fonts/Playfair_Display/PlayfairDisplay-Regular.ttf'
+        font_size: '15sp'
+        text: "SETTINGS"
+        size_hint_y: .20
+        on_press: app.change_screen('settings', angle='right')
+    Label:
+        size_hint_y: .03
+    Label:
+        size_hint_y: .03
+
 
 <FileBox>:
     size: root.size
@@ -5,7 +45,7 @@
         Rectangle:
             pos: self.pos
             size: self.size
-            source: "data/img/background.png"
+            source: "data/images/steampunk-bkg.png"
     orientation: 'vertical'
     Button:
         background_color: 0, 0, 0, 0
@@ -45,7 +85,7 @@
         Rectangle:
             pos: self.pos
             size: self.size
-            source: "data/img/background.png"
+            source: "data/images/steampunk-bkg.png"
     Label:
         font_name: 'data/fonts/Playfair_Display/PlayfairDisplay-Regular.ttf'
         text: "machine werkz"
@@ -60,7 +100,7 @@
         font_size: '30sp'
         text: "PLAY"
         size_hint_y: .71
-        on_press: app.change_screen('game', angle='left')
+        on_press: app.change_screen('levels', angle='left')
     Button:
         background_color: 0, 0, 0, 0
         font_name: 'data/fonts/Playfair_Display/PlayfairDisplay-Regular.ttf'
@@ -80,7 +120,7 @@
         Rectangle:
             pos: self.pos
             size: self.size
-            source: "data/img/background.png"
+            source: app.level_bkg
     orientation: "vertical"
     Label:
         font_name: 'data/fonts/Playfair_Display/PlayfairDisplay-Regular.ttf'
@@ -137,7 +177,7 @@
         Rectangle:
             pos: self.pos
             size: self.size
-            source: "data/img/background.png"
+            source: "data/images/steampunk-bkg.png"
     orientation: "vertical"
     Button:
         background_color: 0, 0, 0, 0
@@ -150,7 +190,7 @@
         size_hint_y: .2
         font_name: 'data/fonts/Playfair_Display/PlayfairDisplay-Regular.ttf'
         font_size: '18sp'
-        text: "Choose the starting level"
+        text: "Choose your speed"
     Spinner:
         background_color: 0, 0, .7, .7
         id: speed_spinner
@@ -186,6 +226,8 @@
 <SettingsScreen>:
     SettingsMenu:
 
+<LevelScreen>:
+    LevelSelect:
 
 <FileBrowserScreen>:
     FileBox:
