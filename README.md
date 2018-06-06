@@ -8,19 +8,19 @@ wrapped finite state machine written in [Python](http://www.python.org)
 
 
              
-                     [Player]
+                       [Player]
 
-                        |
+                          |
 
-                     [Widget]
-                     [Layout]
-                     [Screen]
-                 [Screen Manager]
-                      [App]
+             A         [Widget]          A
+             U         [Layout]          U
+             D         [Screen]          D
+             I     [Screen Manager]      I
+             O          [App]            O
 
-                        |
+                          |
 
-                     [Game]
+                        [Game]
 
 
 ### audio credits
@@ -34,3 +34,14 @@ by [Timbre](http://freesound.org/people/Timbre/)
 [crank.wav](http://freesound.org/people/genel/sounds/138260/) by [genel](http://freesound.org/people/genel/)
 
 [ratchet](http://freesound.org/people/atomota/sounds/26826/) by [atomota](http://freesound.org/people/atomota/)
+
+[Synth Wave 10](http://freesound.org/people/Erokia/sounds/431539/) & [Tilted Synth 1](http://freesound.org/people/Erokia/sounds/424976/) by [Erokia](http://freesound.org/people/Erokia/)
+
+[electribe-kicks slice 60](http://freesound.org/people/soneproject/sounds/260538/) by [soneproject](https://freesound.org/people/soneproject/)
+
+[fireball](http://freesound.org/people/Julien%20Matthey/sounds/105016/) by [Julien Matthey](http://freesound.org/people/Julien%20Matthey/)
+
+[Plop Enhanced](http://freesound.org/people/edsward/sounds/343097/) by [edsward](http://freesound.org/people/edsward/)
+
+[Real Closed Hat](http://freesound.org/people/sandyrb/sounds/35636/) by [sandyrb](http://freesound.org/people/sandyrb/)
+
