@@ -45,3 +45,7 @@ by [Timbre](http://freesound.org/people/Timbre/)
 
 [Real Closed Hat](http://freesound.org/people/sandyrb/sounds/35636/) by [sandyrb](http://freesound.org/people/sandyrb/)
 
+[snare pj-cohen](http://freesound.org/people/Veiler/sounds/264599/) and [swedish-kick](http://freesound.org/people/Veiler/sounds/264601/) by [Veiler](http://freesound.org/people/Veiler/)
+
+[triangle](http://freesound.org/people/fschaeffer/sounds/337917/) by [fschaeffer](http://freesound.org/people/fschaeffer/sounds/337917/)
+
