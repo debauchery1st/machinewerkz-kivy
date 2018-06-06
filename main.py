@@ -21,7 +21,7 @@ from machinewerkz import PuzzlePiece, GameBoard, LEFT, RIGHT, screen_grid
 from settings import default_settings
 from styles import soundfx
 
-__version__ = "0.6.0"
+__version__ = "0.6.1"
 
 
 LOCAL_DEFAULTS = default_settings(from_file=True)
